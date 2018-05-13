@@ -76,20 +76,20 @@ if __name__ == '__main__':
     video = cv2.VideoCapture(video_path)
 
     # New cv2
-    width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))   # float
-    height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT)) # float
+    # width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))   # float
+    # height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT)) # float
 
     # Define the codec and create VideoWriter object
-    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-    out = cv2.VideoWriter('output/video/output-%s.avi' % args.output_string, fourcc, args.fps, (width, height))
+    # fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+    # out = cv2.VideoWriter('output/video/output-%s.avi' % args.output_string, fourcc, args.fps, (width, height))
 
-    # # Old cv2
-    # width = int(video.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH))   # float
-    # height = int(video.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT)) # float
-    #
+    # Old cv2
+    width = int(video.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH))   # float
+    height = int(video.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT)) # float
+    
     # # Define the codec and create VideoWriter object
-    # fourcc = cv2.cv.CV_FOURCC(*'MJPG')
-    # out = cv2.VideoWriter('output/video/output-%s.avi' % args.output_string, fourcc, 30.0, (width, height))
+    fourcc = cv2.cv.CV_FOURCC(*'MJPG')
+    out = cv2.VideoWriter('output/video/output-%s.avi' % args.output_string, fourcc, 30.0, (width, height))
 
     txt_out = open('output/video/output-%s.txt' % args.output_string, 'w')
 
@@ -108,7 +108,8 @@ if __name__ == '__main__':
         print frame_num
 
         # Stop at a certain frame number
-        if frame_num > args.n_frames:
+        if args.n_frames and (frame_num > args.n_frames):
+            print(args.n_frames)
             break
 
         # Save all frames as they are if they don't have bbox annotation.
@@ -161,6 +162,7 @@ if __name__ == '__main__':
                 yaw_predicted = F.softmax(yaw)
                 pitch_predicted = F.softmax(pitch)
                 roll_predicted = F.softmax(roll)
+                
                 # Get continuous predictions in degrees.
                 yaw_predicted = torch.sum(yaw_predicted.data[0] * idx_tensor) * 3 - 99
                 pitch_predicted = torch.sum(pitch_predicted.data[0] * idx_tensor) * 3 - 99

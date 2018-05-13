@@ -1,1 +1,5 @@
 models/
+output/
+data/
+*.pyc
+*.swp
