@@ -70,6 +70,8 @@ sudo docker start CONTAINER_ID
 sudo docker attach CONTAINER_ID
 ```
 
+Terminal may seem to be hanging - just press enter (or any key).
+
 #### Gaze
 
 The second part of the pipeline outputs a file which contains the [Euler angles](https://en.wikipedia.org/wiki/Euler_angles) that describe the pitch, yaw and roll of the faces that have been detected by [Faster-RCNN](https://arxiv.org/pdf/1506.01497.pdf).
