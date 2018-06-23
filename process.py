@@ -36,10 +36,15 @@ def convert_from_euler_angle_to_vector(yaw_angle, pitch_angle):
     ])
 
 class Pipeline:
-    def __init__(self, name, raw_gaze_path, product_calibration_path):
+    def __init__(self, name, raw_gaze_path, product_calibration_path, output_path):
         self.name = name
+        
+        # INPUTS
         self.raw_gaze_path = raw_gaze_path
         self.product_calibration_path = product_calibration_path
+
+        # OUTPUT
+        self.output_path = output_path
 
     def ingest_raw_gaze(self):
         gaze_df = pd.read_csv(self.raw_gaze_path, delimiter=' ', header=None)
@@ -63,28 +68,31 @@ class Pipeline:
 
         return z_vectors
 
-    def create_probabilty_scores_for_products(self):
+    def create_probabilty_scores_for_products(self, gaze_df, product_calibration):
         raise NotImplementedError
 
     def write_results_per_frame(self):
+        # write out to self.output_path
         raise NotImplementedError
 
     def run(self):
         gaze_df = self.ingest_raw_gaze()
         product_calibration = self.ingest_product_calibration()
-        self.convert_all_euler_angles_to_vectors()
-        self.create_probabilty_scores_for_products()
+        self.convert_all_euler_angles_to_vectors(gaze_df)
+        self.create_probabilty_scores_for_products(gaze_df, product_calibration)
         self.write_results_per_frame()
 
 
 if __name__ == "__main__":
     RAW_GAZE_PATH = "notebooks/visualization/data/frame_to_gaze.txt"
     PRODUCT_CALIBRATION_PATH = "notebooks/visualization/data/frame_to_bbox.txt"
+    OUTPUT_PATH = 'notebooks/visualization/data/output.txt'
 
     pipeline = Pipeline(
         'fucked pipeline',
         RAW_GAZE_PATH,
-        PRODUCT_CALIBRATION_PATH
+        PRODUCT_CALIBRATION_PATH,
+        OUTPUT_PATH
     )
 
     pipeline.run()
