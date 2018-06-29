@@ -28,7 +28,8 @@ idx_to_name = [
     "Pedigree Dog Treats",
 ]
 
-out_filename = "overlay.mp4"
+do_downscale = True
+out_filename = "overlay_downscaled.mp4" if do_downscale else "overlay_demo.mp4"
 
 def pred_to_text_clip(pred):
     text = idx_to_name[int(pred)]
@@ -38,9 +39,17 @@ def delete_file_if_exists(filename):
     if os.path.exists(filename):
         os.remove(filename)
 
+def get_video(path, with_audio):
+    video = VideoFileClip(path).subclip(start_sec, end_sec)
+    if not with_audio:
+        video = video.without_audio()
+    if do_downscale:
+        video = video.resize(0.25)
+    return video
+
 preds = np.load(preds_path)[start_frame:end_frame]
-video1 = VideoFileClip(video1_path).subclip(start_sec, end_sec).resize(0.25)
-video4 = VideoFileClip(video4_path).subclip(start_sec, end_sec).resize(0.25)
+video1 = get_video(video1_path, with_audio=True)
+video4 = get_video(video4_path, with_audio=False)
 
 stacked_video = clips_array([[video1, video4]])
 
