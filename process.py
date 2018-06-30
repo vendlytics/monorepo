@@ -5,6 +5,7 @@
 # outputs:
 # - CSV with column per product at each frame
 # with the confidence that you are looking at each product
+# and prediction + smoothed prediction
 
 from __future__ import absolute_import
 from __future__ import division
@@ -14,7 +15,9 @@ from collections import namedtuple
 import numpy as np
 import os
 import pandas as pd
+from scipy.signal import medfilt
 from scipy.spatial.distance import euclidean
+
 
 USE_BBOX = False
 
@@ -24,7 +27,7 @@ def calculate_rectangle_centroid(min_x, min_y, max_x, max_y):
     """
     Returns a tuple (x, y) which gives the position of the face bounding box.
     """
-    return (min_x + max_x) / 2, (min_y + max_y) / 2  
+    return (min_x + max_x) / 2, (min_y + max_y) / 2
 
 
 def calculate_rectangle_area(min_x, min_y, max_x, max_y):
@@ -39,7 +42,7 @@ def convert_from_euler_angle_to_vector(yaw_angle, pitch_angle):
     """
     yaw_angle_radians = yaw_angle * np.pi / 180
     pitch_angle_radians = pitch_angle * np.pi / 180
-    
+
     return np.array([
         np.cos(yaw_angle_radians) * np.cos(pitch_angle_radians),
         np.sin(yaw_angle_radians) * np.cos(pitch_angle_radians),
@@ -49,11 +52,11 @@ def convert_from_euler_angle_to_vector(yaw_angle, pitch_angle):
 def calculate_poi(n_vector, ray, dist_estimate):
     """
     Finds the point of intersection of a vector on the shelf plane.
-    
+
     n_vector is shelf plane vector i.e. normal to the shelf plane
     ray is the combination of origin and direction to intersect with the plane
     dist_estimate is estimate of shelf distance from person
-    
+
     Notation from http://www.ambrsoft.com/TrigoCalc/Plan3D/PlaneLineIntersection_.htm
     """
     p_vector = n_vector + dist_estimate
@@ -133,7 +136,13 @@ class Pipeline:
             # 2. calculate for each product the distance between the product's vector and POI on plane
             for i in range(len(product_plane_coords)):
                 gaze_df.at[idx, 'product {}'.format(i)] = get_abs_euclidean_distance(-poi, product_plane_coords[i])
-        
+
+        # 3. make regular and smoothed predictions based on product distances
+        product_cols = ['product 0', 'product 1', 'product 2', 'product 3', 'product 4', 'product 5', 'product 6']
+        distances = gaze_df[product_cols].values # num_frames x num_products
+        gaze_df['predictions'] = np.argmin(distances, axis=1) # num_frames
+        gaze_df['smoothed_predictions'] = medfilt(gaze_df['predictions'], kernel_size=89)
+
         return gaze_df
 
     def write_results_per_frame(self, new_gaze_df):
@@ -150,31 +159,31 @@ class Pipeline:
         dist_estimate = self.ingest_dist_estimate()
 
         new_gaze_df = self.compute_distance_scores_for_products(gaze_df, bbox_df,
-                                                                product_plane_coords, 
+                                                                product_plane_coords,
                                                                 shelf_plane_norm, dist_estimate)
-        
+
         if self.write_results_per_frame(new_gaze_df):
             print("DONE: {} frames".format(new_gaze_df.shape[0]))
 
 
 if __name__ == "__main__":
     RAW_GAZE_PATH = "notebooks/visualization/notebook_data/frame_to_gaze.txt"
-    
+
     # not used
     BBOX_PATH = "notebooks/visualization/notebook_data/frame_to_bbox.txt"
 
     # the coordinates of products on shelf
     PRODUCTS_ON_SHELF_PLANE_COORDS_PATH = "notebooks/visualization/notebook_data/product_plane_coords.txt"
-    
+
     # norm of the shelf plane
     SHELF_PLANE_NORM_PATH = "notebooks/visualization/notebook_data/shelf_plane_norm.txt"
-    
+
     # the gaze vectors for the products (not used)
     PRODUCT_GAZE_VECTORS_PATH = "notebooks/visualization/notebook_data/product_vectors.txt"
-    
+
     # the set distance of calibrated face from shelf
     DIST_ESTIMATE_PATH = "notebooks/visualization/notebook_data/dist_estimate.txt"
-    
+
     filename = "output_with_bbox.txt" if USE_BBOX else "output_without_bbx.txt"
     OUTPUT_PATH = os.path.join("notebooks/visualization/notebook_data/", filename)
 
