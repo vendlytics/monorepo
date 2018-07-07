@@ -1,0 +1,3 @@
+pip install -r requirements.txt --user
+
+# should also set up videos and test data

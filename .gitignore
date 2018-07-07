@@ -3,3 +3,5 @@ output/
 data/
 *.pyc
 *.swp
+.ipynb_checkpoints/
+.vscode/
