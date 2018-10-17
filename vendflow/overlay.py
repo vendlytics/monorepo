@@ -7,9 +7,9 @@ import os
 from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip, concatenate, \
     clips_array
 
-preds_path = 'notebooks/visualization/notebook_data/smooth_prediction.npy'
+preds_path = 'smooth_prediction.npy'
 video1_path = 'gaze_overlay_24fps.mp4'
-video4_path = 'notebooks/visualization/notebook_data/videos/Camera 4 - Vendlytics Prototype.mp4'
+video4_path = 'Camera 4 - Vendlytics Prototype.mp4'
 
 fps = 24
 offset = 28.4
@@ -28,7 +28,7 @@ idx_to_name = [
     "Pedigree Dog Treats",
 ]
 
-do_downscale = True
+do_downscale = False 
 out_filename = "overlay_downscaled_with_gaze.mp4" if do_downscale else "overlay_demo.mp4"
 
 def pred_to_text_clip(pred):
