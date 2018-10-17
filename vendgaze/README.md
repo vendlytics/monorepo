@@ -30,44 +30,9 @@ The next section will transfer that video over to the Docker image to extract fa
 
 The initial part of the pipeline builds a bounding box around the faces that are in the video. The video that is being used to test should be placed inside the `data/` folder.
 
-The bounding box around the faces happens inside a Docker image which comes with all of the dependencies pre-installed and configured. Make sure you're in the project directory.
-
-```bash
-sudo nvidia-docker run -it -v $PWD/data:/opt/py-faster-rcnn/edata -v $PWD/output/video:/opt/py-faster-rcnn/output/video -v $PWD/output/images:/opt/py-faster-rcnn/output/images natanielruiz/dockerface:latest
-```
-
-Recompile Caffe
-``` bash
-cd caffe-fast-rcnn
-rm -rf build
-mkdir build
-cd build
-cmake -DUSE_CUDNN=1 ..
-make -j20
-cd ../..
-```
-
-Run this to process the video
-```bash
-python tools/run_face_detection_on_video.py --gpu 0 --video edata/YOUR_VIDEO_FILENAME --output_string STRING_TO_BE_APPENDED_TO_OUTPUTFILE_NAME --conf_thresh CONFIDENCE_THRESHOLD_FOR_DETECTIONS
-```
-
-For the confidence threshold, use `0.85`. The output bounding boxes have this format:
+The output bounding boxes have this format:
 ```
 frame_number x_min y_min x_max y_max confidence_score
-```
-
-Once you're done with the Docker container, you can exit with `exit`.
-
-To make sure you don't have to compile the docker container again, get the `CONTAINER_ID` with
-```bash
-sudo docker ps -a
-```
-
-Substitute the `CONTAINER_ID` to start and attach to that container.
-```bash
-sudo docker start CONTAINER_ID
-sudo docker attach CONTAINER_ID
 ```
 
 #### Gaze
