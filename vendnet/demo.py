@@ -336,6 +336,9 @@ if __name__ == '__main__':
             keep = nms(cls_dets, cfg.TEST.NMS)
             cls_dets = cls_dets[keep.view(-1).long()]
             if vis:
+              # TODO: want: frame_number x_min y_min x_max y_max confidence_score
+              # cls_dets.cpu().numpy()'s last float is confidence score!
+              print('dets: ', cls_dets.cpu().numpy())
               im2show = vis_detections(im2show, pascal_classes[j], cls_dets.cpu().numpy(), 0.5)
 
       misc_toc = time.time()
@@ -354,10 +357,11 @@ if __name__ == '__main__':
       else:
           im2showRGB = cv2.cvtColor(im2show, cv2.COLOR_BGR2RGB)
           cv2.imshow("frame", im2showRGB)
+          # print('frame: ', im2showRGB)
           total_toc = time.time()
           total_time = total_toc - total_tic
           frame_rate = 1 / total_time
-          print('Frame rate:', frame_rate)
+          # print('Frame rate:', frame_rate)
           if cv2.waitKey(1) & 0xFF == ord('q'):
               break
   if webcam_num >= 0:
