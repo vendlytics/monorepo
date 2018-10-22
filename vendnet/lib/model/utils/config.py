@@ -10,8 +10,8 @@ from easydict import EasyDict as edict
 
 __C = edict()
 # Consumers can get config by:
-#   from fast_rcnn_config import cfg
-cfg = __C
+#   from fast_rcnn_config import config
+config = __C
 
 #
 # Training options
@@ -367,20 +367,20 @@ def _merge_a_into_b(a, b):
       b[k] = v
 
 
-def cfg_from_file(filename):
+def config_from_file(filename):
   """Load a config file and merge it into the default options."""
   import yaml
   with open(filename, 'r') as f:
-    yaml_cfg = edict(yaml.load(f))
+    yaml_config = edict(yaml.load(f))
 
-  _merge_a_into_b(yaml_cfg, __C)
+  _merge_a_into_b(yaml_config, __C)
 
 
-def cfg_from_list(cfg_list):
+def config_from_list(config_list):
   """Set config keys via list (e.g., from command line)."""
   from ast import literal_eval
-  assert len(cfg_list) % 2 == 0
-  for k, v in zip(cfg_list[0::2], cfg_list[1::2]):
+  assert len(config_list) % 2 == 0
+  for k, v in zip(config_list[0::2], config_list[1::2]):
     key_list = k.split('.')
     d = __C
     for subkey in key_list[:-1]:

@@ -26,7 +26,7 @@ import torchvision.datasets as dset
 from scipy.misc import imread
 from roi_data_layer.roidb import combined_roidb
 from roi_data_layer.roibatchLoader import roibatchLoader
-from model.utils.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
+from model.utils.config import config, config_from_file, config_from_list, get_output_dir
 from model.rpn.bbox_transform import clip_boxes
 from model.nms.nms_wrapper import nms
 from model.rpn.bbox_transform import bbox_transform_inv
@@ -50,13 +50,13 @@ def parse_args():
     parser.add_argument('--dataset', dest='dataset',
                         help='training dataset',
                         default='pascal_voc', type=str)
-    parser.add_argument('--cfg', dest='cfg_file',
+    parser.add_argument('--config', dest='config_file',
                         help='optional config file',
-                        default='cfgs/vgg16.yml', type=str)
+                        default='configs/vgg16.yml', type=str)
     parser.add_argument('--net', dest='net',
                         help='vgg16, res50, res101, res152',
                         default='res101', type=str)
-    parser.add_argument('--set', dest='set_cfgs',
+    parser.add_argument('--set', dest='set_configs',
                         help='set config keys', default=None,
                         nargs=argparse.REMAINDER)
     parser.add_argument('--load_dir', dest='load_dir',
@@ -106,9 +106,9 @@ def parse_args():
     return args
 
 
-lr = cfg.TRAIN.LEARNING_RATE
-momentum = cfg.TRAIN.MOMENTUM
-weight_decay = cfg.TRAIN.WEIGHT_DECAY
+lr = config.TRAIN.LEARNING_RATE
+momentum = config.TRAIN.MOMENTUM
+weight_decay = config.TRAIN.WEIGHT_DECAY
 
 
 def _get_image_blob(im):
@@ -121,7 +121,7 @@ def _get_image_blob(im):
         in the image pyramid
     """
     im_orig = im.astype(np.float32, copy=True)
-    im_orig -= cfg.PIXEL_MEANS
+    im_orig -= config.PIXEL_MEANS
 
     im_shape = im_orig.shape
     im_size_min = np.min(im_shape[0:2])
@@ -130,11 +130,11 @@ def _get_image_blob(im):
     processed_ims = []
     im_scale_factors = []
 
-    for target_size in cfg.TEST.SCALES:
+    for target_size in config.TEST.SCALES:
         im_scale = float(target_size) / float(im_size_min)
         # Prevent the biggest axis from being more than MAX_SIZE
-        if np.round(im_scale * im_size_max) > cfg.TEST.MAX_SIZE:
-            im_scale = float(cfg.TEST.MAX_SIZE) / float(im_size_max)
+        if np.round(im_scale * im_size_max) > config.TEST.MAX_SIZE:
+            im_scale = float(config.TEST.MAX_SIZE) / float(im_size_max)
         im = cv2.resize(im_orig, None, None, fx=im_scale, fy=im_scale,
                         interpolation=cv2.INTER_LINEAR)
         im_scale_factors.append(im_scale)
@@ -153,14 +153,14 @@ if __name__ == '__main__':
     print('Called with args:')
     print(args)
 
-    if args.cfg_file is not None:
-        cfg_from_file(args.cfg_file)
-    if args.set_cfgs is not None:
-        cfg_from_list(args.set_cfgs)
+    if args.config_file is not None:
+        config_from_file(args.config_file)
+    if args.set_configs is not None:
+        config_from_list(args.set_configs)
 
     print('Using config:')
-    pprint.pprint(cfg)
-    np.random.seed(cfg.RNG_SEED)
+    pprint.pprint(config)
+    np.random.seed(config.RNG_SEED)
 
     # train set
     # -- Note: Use validation set and disable the flipped to enable faster loading.
@@ -220,7 +220,7 @@ if __name__ == '__main__':
     checkpoint = torch.load(load_name)
     fasterRCNN.load_state_dict(checkpoint['model'])
     if 'pooling_mode' in checkpoint.keys():
-        cfg.POOLING_MODE = checkpoint['pooling_mode']
+        config.POOLING_MODE = checkpoint['pooling_mode']
 
     print('load model successfully!')
 
@@ -248,7 +248,7 @@ if __name__ == '__main__':
     gt_boxes = Variable(gt_boxes, volatile=True)
 
     if args.cuda > 0:
-        cfg.CUDA = True
+        config.CUDA = True
 
     if args.cuda > 0:
         fasterRCNN.cuda()
@@ -363,18 +363,18 @@ if __name__ == '__main__':
         scores = cls_prob.data
         boxes = rois.data[:, :, 1:5]
 
-        if cfg.TEST.BBOX_REG:
+        if config.TEST.BBOX_REG:
                 # Apply bounding-box regression deltas
             box_deltas = bbox_pred.data
-            if cfg.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED:
+            if config.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED:
                 # Optionally normalize targets by a precomputed mean and stdev
                 if args.class_agnostic:
-                    box_deltas = box_deltas.view(-1, 4) * torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_STDS).cuda(
-                    ) + torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_MEANS).cuda()
+                    box_deltas = box_deltas.view(-1, 4) * torch.FloatTensor(config.TRAIN.BBOX_NORMALIZE_STDS).cuda(
+                    ) + torch.FloatTensor(config.TRAIN.BBOX_NORMALIZE_MEANS).cuda()
                     box_deltas = box_deltas.view(1, -1, 4)
                 else:
-                    box_deltas = box_deltas.view(-1, 4) * torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_STDS).cuda(
-                    ) + torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_MEANS).cuda()
+                    box_deltas = box_deltas.view(-1, 4) * torch.FloatTensor(config.TRAIN.BBOX_NORMALIZE_STDS).cuda(
+                    ) + torch.FloatTensor(config.TRAIN.BBOX_NORMALIZE_MEANS).cuda()
                     box_deltas = box_deltas.view(
                         1, -1, 4 * len(pascal_classes))
 
@@ -407,7 +407,7 @@ if __name__ == '__main__':
                 cls_dets = torch.cat((cls_boxes, cls_scores.unsqueeze(1)), 1)
                 # cls_dets = torch.cat((cls_boxes, cls_scores), 1)
                 cls_dets = cls_dets[order]
-                keep = nms(cls_dets, cfg.TEST.NMS)
+                keep = nms(cls_dets, config.TEST.NMS)
                 cls_dets = cls_dets[keep.view(-1).long()]
                 if vis:
                     # TODO: want: frame_number x_min y_min x_max y_max confidence_score
@@ -419,8 +419,8 @@ if __name__ == '__main__':
                     for detection in cls_dets.cpu().numpy():
                         fid.write(
                             str(processed_images) +
-                            " " +
-                            np.array2string(detection))
+                            "\t" +
+                            "\t".join(map(str, detection)) + "\n")
 
                     im2show = vis_detections(
                         im2show, pascal_classes[j], cls_dets.cpu().numpy(), 0.5)
@@ -455,3 +455,5 @@ if __name__ == '__main__':
     if webcam_num >= 0:
         cap.release()
         cv2.destroyAllWindows()
+
+fid.close()

@@ -10,7 +10,7 @@ import torch.utils.data as data
 from PIL import Image
 import torch
 
-from model.utils.config import cfg
+from model.utils.config import config
 from roi_data_layer.minibatch import get_minibatch, get_minibatch
 from model.rpn.bbox_transform import bbox_transform_inv, clip_boxes
 
@@ -24,9 +24,9 @@ class roibatchLoader(data.Dataset):
     self._roidb = roidb
     self._num_classes = num_classes
     # we make the height of image consistent to trim_height, trim_width
-    self.trim_height = cfg.TRAIN.TRIM_HEIGHT
-    self.trim_width = cfg.TRAIN.TRIM_WIDTH
-    self.max_num_box = cfg.MAX_NUM_GT_BOXES
+    self.trim_height = config.TRAIN.TRIM_HEIGHT
+    self.trim_width = config.TRAIN.TRIM_WIDTH
+    self.max_num_box = config.MAX_NUM_GT_BOXES
     self.training = training
     self.normalize = normalize
     self.ratio_list = ratio_list

@@ -17,7 +17,7 @@ import gzip
 import PIL
 import json
 from .vg_eval import vg_eval
-from model.utils.config import cfg
+from model.utils.config import config
 import pickle
 import pdb
 try:
@@ -31,8 +31,8 @@ class vg(imdb):
         imdb.__init__(self, 'vg_' + version + '_' + image_set)
         self._version = version
         self._image_set = image_set
-        self._data_path = os.path.join(cfg.DATA_DIR, 'genome')
-        self._img_path = os.path.join(cfg.DATA_DIR, 'vg')
+        self._data_path = os.path.join(config.DATA_DIR, 'genome')
+        self._img_path = os.path.join(config.DATA_DIR, 'vg')
         # VG specific config options
         self.config = {'cleanup' : False}
 

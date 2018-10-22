@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from model.utils.config import cfg
+from model.utils.config import config
 from .proposal_layer import _ProposalLayer
 from .anchor_target_layer import _AnchorTargetLayer
 from model.utils.net_utils import _smooth_l1_loss
@@ -20,9 +20,9 @@ class _RPN(nn.Module):
         super(_RPN, self).__init__()
         
         self.din = din  # get depth of input feature map, e.g., 512
-        self.anchor_scales = cfg.ANCHOR_SCALES
-        self.anchor_ratios = cfg.ANCHOR_RATIOS
-        self.feat_stride = cfg.FEAT_STRIDE[0]
+        self.anchor_scales = config.ANCHOR_SCALES
+        self.anchor_ratios = config.ANCHOR_RATIOS
+        self.feat_stride = config.FEAT_STRIDE[0]
 
         # define the convrelu layers processing input feature map
         self.RPN_Conv = nn.Conv2d(self.din, 512, 3, 1, 1, bias=True)
@@ -72,10 +72,10 @@ class _RPN(nn.Module):
         rpn_bbox_pred = self.RPN_bbox_pred(rpn_conv1)
 
         # proposal layer
-        cfg_key = 'TRAIN' if self.training else 'TEST'
+        config_key = 'TRAIN' if self.training else 'TEST'
 
         rois = self.RPN_proposal((rpn_cls_prob.data, rpn_bbox_pred.data,
-                                 im_info, cfg_key))
+                                 im_info, config_key))
 
         self.rpn_loss_cls = 0
         self.rpn_loss_box = 0

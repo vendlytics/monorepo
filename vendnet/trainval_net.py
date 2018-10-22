@@ -26,7 +26,7 @@ from torch.utils.data.sampler import Sampler
 
 from roi_data_layer.roidb import combined_roidb
 from roi_data_layer.roibatchLoader import roibatchLoader
-from model.utils.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
+from model.utils.config import config, config_from_file, config_from_list, get_output_dir
 from model.utils.net_utils import weights_normal_init, save_net, load_net, \
     adjust_learning_rate, save_checkpoint, clip_gradient
 
@@ -167,7 +167,7 @@ if __name__ == '__main__':
     if args.dataset == "wider_face":
         args.imdb_name = "wider_face_train"
         args.imdbval_name = "wider_face_val"
-        args.set_cfgs = [
+        args.set_configs = [
             'ANCHOR_SCALES',
             '[4, 8, 16, 32]',
             'ANCHOR_RATIOS',
@@ -177,7 +177,7 @@ if __name__ == '__main__':
     elif args.dataset == "pascal_voc":
         args.imdb_name = "voc_2007_trainval"
         args.imdbval_name = "voc_2007_test"
-        args.set_cfgs = [
+        args.set_configs = [
             'ANCHOR_SCALES',
             '[8, 16, 32]',
             'ANCHOR_RATIOS',
@@ -187,7 +187,7 @@ if __name__ == '__main__':
     elif args.dataset == "pascal_voc_0712":
         args.imdb_name = "voc_2007_trainval+voc_2012_trainval"
         args.imdbval_name = "voc_2007_test"
-        args.set_cfgs = [
+        args.set_configs = [
             'ANCHOR_SCALES',
             '[8, 16, 32]',
             'ANCHOR_RATIOS',
@@ -197,7 +197,7 @@ if __name__ == '__main__':
     elif args.dataset == "coco":
         args.imdb_name = "coco_2014_train+coco_2014_valminusminival"
         args.imdbval_name = "coco_2014_minival"
-        args.set_cfgs = [
+        args.set_configs = [
             'ANCHOR_SCALES',
             '[4, 8, 16, 32]',
             'ANCHOR_RATIOS',
@@ -207,7 +207,7 @@ if __name__ == '__main__':
     elif args.dataset == "imagenet":
         args.imdb_name = "imagenet_train"
         args.imdbval_name = "imagenet_val"
-        args.set_cfgs = [
+        args.set_configs = [
             'ANCHOR_SCALES',
             '[4, 8, 16, 32]',
             'ANCHOR_RATIOS',
@@ -220,7 +220,7 @@ if __name__ == '__main__':
         # '1750-700-450', '1600-400-20']
         args.imdb_name = "vg_150-50-50_minitrain"
         args.imdbval_name = "vg_150-50-50_minival"
-        args.set_cfgs = [
+        args.set_configs = [
             'ANCHOR_SCALES',
             '[4, 8, 16, 32]',
             'ANCHOR_RATIOS',
@@ -228,17 +228,17 @@ if __name__ == '__main__':
             'MAX_NUM_GT_BOXES',
             '50']
 
-    args.cfg_file = "cfgs/{}_ls.yml".format(
-        args.net) if args.large_scale else "cfgs/{}.yml".format(args.net)
+    args.config_file = "configs/{}_ls.yml".format(
+        args.net) if args.large_scale else "configs/{}.yml".format(args.net)
 
-    if args.cfg_file is not None:
-        cfg_from_file(args.cfg_file)
-    if args.set_cfgs is not None:
-        cfg_from_list(args.set_cfgs)
+    if args.config_file is not None:
+        config_from_file(args.config_file)
+    if args.set_configs is not None:
+        config_from_list(args.set_configs)
 
     print('Using config:')
-    pprint.pprint(cfg)
-    np.random.seed(cfg.RNG_SEED)
+    pprint.pprint(config)
+    np.random.seed(config.RNG_SEED)
 
     # torch.backends.cudnn.benchmark = True
     if torch.cuda.is_available() and not args.cuda:
@@ -246,8 +246,8 @@ if __name__ == '__main__':
 
     # train set
     # -- Note: Use validation set and disable the flipped to enable faster loading.
-    cfg.TRAIN.USE_FLIPPED = True
-    cfg.USE_GPU_NMS = args.cuda
+    config.TRAIN.USE_FLIPPED = True
+    config.USE_GPU_NMS = args.cuda
     imdb, roidb, ratio_list, ratio_index = combined_roidb(args.imdb_name)
     train_size = len(roidb)
 
@@ -288,7 +288,7 @@ if __name__ == '__main__':
     gt_boxes = Variable(gt_boxes)
 
     if args.cuda:
-        cfg.CUDA = True
+        config.CUDA = True
 
     # initilize the network here.
     if args.net == 'vgg16':
@@ -320,9 +320,9 @@ if __name__ == '__main__':
 
     fasterRCNN.create_architecture()
 
-    lr = cfg.TRAIN.LEARNING_RATE
+    lr = config.TRAIN.LEARNING_RATE
     lr = args.lr
-    # tr_momentum = cfg.TRAIN.MOMENTUM
+    # tr_momentum = config.TRAIN.MOMENTUM
     # tr_momentum = args.momentum
 
     params = []
@@ -330,18 +330,18 @@ if __name__ == '__main__':
         if value.requires_grad:
             if 'bias' in key:
                 params += [{'params': [value],
-                            'lr': lr * (cfg.TRAIN.DOUBLE_BIAS + 1),
-                            'weight_decay': cfg.TRAIN.BIAS_DECAY and cfg.TRAIN.WEIGHT_DECAY or 0}]
+                            'lr': lr * (config.TRAIN.DOUBLE_BIAS + 1),
+                            'weight_decay': config.TRAIN.BIAS_DECAY and config.TRAIN.WEIGHT_DECAY or 0}]
             else:
                 params += [{'params': [value], 'lr': lr,
-                            'weight_decay': cfg.TRAIN.WEIGHT_DECAY}]
+                            'weight_decay': config.TRAIN.WEIGHT_DECAY}]
 
     if args.optimizer == "adam":
         lr = lr * 0.1
         optimizer = torch.optim.Adam(params)
 
     elif args.optimizer == "sgd":
-        optimizer = torch.optim.SGD(params, momentum=cfg.TRAIN.MOMENTUM)
+        optimizer = torch.optim.SGD(params, momentum=config.TRAIN.MOMENTUM)
 
     if args.resume:
         load_name = os.path.join(
@@ -358,7 +358,7 @@ if __name__ == '__main__':
         optimizer.load_state_dict(checkpoint['optimizer'])
         lr = optimizer.param_groups[0]['lr']
         if 'pooling_mode' in checkpoint.keys():
-            cfg.POOLING_MODE = checkpoint['pooling_mode']
+            config.POOLING_MODE = checkpoint['pooling_mode']
         print("loaded checkpoint %s" % (load_name))
 
     if args.mGPUs:
@@ -455,7 +455,7 @@ if __name__ == '__main__':
                 'epoch': epoch + 1,
                 'model': fasterRCNN.module.state_dict(),
                 'optimizer': optimizer.state_dict(),
-                'pooling_mode': cfg.POOLING_MODE,
+                'pooling_mode': config.POOLING_MODE,
                 'class_agnostic': args.class_agnostic,
             }, save_name)
         else:
@@ -467,7 +467,7 @@ if __name__ == '__main__':
                 'epoch': epoch + 1,
                 'model': fasterRCNN.state_dict(),
                 'optimizer': optimizer.state_dict(),
-                'pooling_mode': cfg.POOLING_MODE,
+                'pooling_mode': config.POOLING_MODE,
                 'class_agnostic': args.class_agnostic,
             }, save_name)
         print('save model: {}'.format(save_name))

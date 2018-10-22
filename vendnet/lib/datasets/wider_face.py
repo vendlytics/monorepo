@@ -17,7 +17,7 @@ import scipy.sparse
 import scipy.io as sio
 import pickle
 import uuid
-from model.utils.config import cfg
+from model.utils.config import config
 
 
 class wider_face(imdb):
@@ -99,7 +99,7 @@ class wider_face(imdb):
         """
         Return the default path where PASCAL VOC is expected to be installed.
         """
-        return os.path.join(cfg.DATA_DIR, 'WIDER2015')
+        return os.path.join(config.DATA_DIR, 'WIDER2015')
 
     def gt_roidb(self):
         """
