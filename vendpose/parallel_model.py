@@ -93,7 +93,8 @@ class ParallelModel(KM.Model):
                 def add_dim(tensor):
                     """Add a dimension to tensors that don't have any."""
                     if K.int_shape(tensor) == ():
-                        return KL.Lambda(lambda t: K.reshape(t, [1, 1]))(tensor)
+                        return KL.Lambda(
+                            lambda t: K.reshape(t, [1, 1]))(tensor)
                     return tensor
                 outputs = list(map(add_dim, outputs))
 

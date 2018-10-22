@@ -28,16 +28,19 @@ idx_to_name = [
     "Pedigree Dog Treats",
 ]
 
-do_downscale = False 
+do_downscale = False
 out_filename = "overlay_downscaled_with_gaze.mp4" if do_downscale else "overlay_demo.mp4"
+
 
 def pred_to_text_clip(pred):
     text = idx_to_name[int(pred)]
     return TextClip(text, fontsize=30, color='white').set_duration(1 / fps)
 
+
 def delete_file_if_exists(filename):
     if os.path.exists(filename):
         os.remove(filename)
+
 
 def get_video(path, with_audio):
     video = VideoFileClip(path).subclip(start_sec, end_sec)
@@ -47,13 +50,15 @@ def get_video(path, with_audio):
         video = video.resize(0.25)
     return video
 
+
 preds = np.load(preds_path)[start_frame:end_frame]
 video1 = get_video(video1_path, with_audio=True)
 video4 = get_video(video4_path, with_audio=False)
 
 stacked_video = clips_array([[video1, video4]])
 
-text_clip = concatenate([pred_to_text_clip(pred) for pred in preds], method="compose")
+text_clip = concatenate([pred_to_text_clip(pred)
+                         for pred in preds], method="compose")
 
 result = CompositeVideoClip([stacked_video, text_clip])
 

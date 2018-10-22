@@ -1,3 +1,4 @@
+import coco
 import os
 
 import model as modellib
@@ -13,7 +14,6 @@ COCO_MODEL_PATH = os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
 # config = shapes.ShapesConfig()
 
 # MS COCO Dataset
-import coco
 config = coco.CocoConfig()
 COCO_DIR = "D:/Github/FastMaskRCNN/data/coco"  # TODO: enter value here
 # Load dataset
@@ -28,13 +28,17 @@ val_dataset_keypoints = coco.CocoDataset(task_type="person_keypoints")
 val_dataset_keypoints.load_coco(COCO_DIR, "val")
 val_dataset_keypoints.prepare()
 
-print("Train Keypoints Image Count: {}".format(len(train_dataset_keypoints.image_ids)))
-print("Train Keypoints Class Count: {}".format(train_dataset_keypoints.num_classes))
+print("Train Keypoints Image Count: {}".format(
+    len(train_dataset_keypoints.image_ids)))
+print("Train Keypoints Class Count: {}".format(
+    train_dataset_keypoints.num_classes))
 for i, info in enumerate(train_dataset_keypoints.class_info):
     print("{:3}. {:50}".format(i, info['name']))
 
-print("Val Keypoints Image Count: {}".format(len(val_dataset_keypoints.image_ids)))
-print("Val Keypoints Class Count: {}".format(val_dataset_keypoints.num_classes))
+print("Val Keypoints Image Count: {}".format(
+    len(val_dataset_keypoints.image_ids)))
+print("Val Keypoints Class Count: {}".format(
+    val_dataset_keypoints.num_classes))
 for i, info in enumerate(val_dataset_keypoints.class_info):
     print("{:3}. {:50}".format(i, info['name']))
 
@@ -43,8 +47,14 @@ model = modellib.MaskRCNN(mode="training", model_dir=MODEL_DIR, config=config)
 
 # Load weights trained on MS-COCO
 
-model.load_weights(COCO_MODEL_PATH, by_name=True,exclude=["mrcnn_class_logits", "mrcnn_bbox_fc",
-                                "mrcnn_bbox", "mrcnn_mask"])
+model.load_weights(
+    COCO_MODEL_PATH,
+    by_name=True,
+    exclude=[
+        "mrcnn_class_logits",
+        "mrcnn_bbox_fc",
+        "mrcnn_bbox",
+        "mrcnn_mask"])
 # model.load_weights(model.find_last()[1],by_name=True)
 # model.keras_model.summary()
 

@@ -20,7 +20,9 @@ class Facenet:
     def _run(self, image_batch):
         return self.sess.run(
             "import/embeddings:0",
-            feed_dict={"import/image_batch:0": image_batch, "import/phase_train:0": False})
+            feed_dict={
+                "import/image_batch:0": image_batch,
+                "import/phase_train:0": False})
 
     def _preprocess(self, image):
         image = imresize(image, (self.image_size, self.image_size))
@@ -36,8 +38,8 @@ class Facenet:
             g_in = tf.import_graph_def(graph_def)
         return tf.Session(graph=g_in)
 
+
 if __name__ == "__main__":
     fn = Facenet()
     image = np.empty((160, 160, 3))
     fn.image_to_embedding(image)
-

@@ -86,7 +86,7 @@ class CocoConfig(Config):
 
     NUM_KEYPOINTS = 17
     MASK_SHAPE = [28, 28]
-    KEYPOINT_MASK_SHAPE = [56,56]
+    KEYPOINT_MASK_SHAPE = [56, 56]
     # DETECTION_MAX_INSTANCES = 50
     TRAIN_ROIS_PER_IMAGE = 100
     MAX_GT_INSTANCES = 128
@@ -99,10 +99,27 @@ class CocoConfig(Config):
     WEIGHT_LOSS = True
     KEYPOINT_THRESHOLD = 0.005
 
-    PART_STR = ["nose","left_eye","right_eye","left_ear","right_ear","left_shoulder",
-                "right_shoulder","left_elbow","right_elbow","left_wrist","right_wrist",
-                "left_hip","right_hip","left_knee","right_knee","left_ankle","right_ankle"]
-    LIMBS = [0,-1,-1,5,-1,6,5,7,6,8,7,9,8,10,11,13,12,14,13,15,14,16]
+    PART_STR = [
+        "nose",
+        "left_eye",
+        "right_eye",
+        "left_ear",
+        "right_ear",
+        "left_shoulder",
+        "right_shoulder",
+        "left_elbow",
+        "right_elbow",
+        "left_wrist",
+        "right_wrist",
+        "left_hip",
+        "right_hip",
+        "left_knee",
+        "right_knee",
+        "left_ankle",
+        "right_ankle"]
+    LIMBS = [0, -1, -1, 5, -1, 6, 5, 7, 6, 8, 7,
+             9, 8, 10, 11, 13, 12, 14, 13, 15, 14, 16]
+
 
 Person_ID = 1
 
@@ -112,7 +129,7 @@ Person_ID = 1
 ############################################################
 
 class CocoDataset(utils.Dataset):
-    def __init__(self, task_type= "instances",class_map = None):
+    def __init__(self, task_type="instances", class_map=None):
         assert task_type in ["instances", "person_keypoints"]
         self.task_type = task_type
         # the connection between 2 close keypoints
@@ -123,8 +140,16 @@ class CocoDataset(utils.Dataset):
         # "left_hip","right_hip","left_knee","right_knee","left_ankle","right_ankle"]
         self._keypoint_names = []
         super().__init__(class_map)
-    def load_coco(self, dataset_dir, subset, year=DEFAULT_DATASET_YEAR, class_ids=None,
-                  class_map=None, return_coco=False, auto_download=False):
+
+    def load_coco(
+            self,
+            dataset_dir,
+            subset,
+            year=DEFAULT_DATASET_YEAR,
+            class_ids=None,
+            class_map=None,
+            return_coco=False,
+            auto_download=False):
         """Load a subset of the COCO dataset.
         dataset_dir: The root directory of the COCO dataset.
         subset: What to load (train, val, minival, valminusminival)
@@ -139,8 +164,8 @@ class CocoDataset(utils.Dataset):
         if auto_download is True:
             self.auto_download(dataset_dir, subset, year)
 
-
-        coco = COCO("{}/annotations/{}_{}{}.json".format(dataset_dir, self.task_type, subset, year))
+        coco = COCO("{}/annotations/{}_{}{}.json".format(dataset_dir,
+                                                         self.task_type, subset, year))
         if subset == "minival" or subset == "valminusminival":
             subset = "val"
         image_dir = "{}/{}{}".format(dataset_dir, subset, year)
@@ -177,24 +202,25 @@ class CocoDataset(utils.Dataset):
                     imgIds=[i], catIds=class_ids, iscrowd=None)))
 
         if(self.task_type == "person_keypoints"):
-            #the connection between 2 close keypoints
+            # the connection between 2 close keypoints
             self._skeleton = coco.loadCats(Person_ID)[0]["skeleton"]
-            #keypoint names
+            # keypoint names
             # ["nose","left_eye","right_eye","left_ear","right_ear","left_shoulder",
             # "right_shoulder","left_elbow","right_elbow","left_wrist","right_wrist",
             # "left_hip","right_hip","left_knee","right_knee","left_ankle","right_ankle"]
             self._keypoint_names = coco.loadCats(Person_ID)[0]["keypoints"]
 
-            self._skeleton = np.array(self._skeleton,dtype=np.int32)
+            self._skeleton = np.array(self._skeleton, dtype=np.int32)
 
-            print("Skeleton:",np.shape(self._skeleton))
-            print("Keypoint names:",np.shape(self._keypoint_names))
+            print("Skeleton:", np.shape(self._skeleton))
+            print("Keypoint names:", np.shape(self._keypoint_names))
         if return_coco:
             return coco
 
     @property
     def skeleton(self):
         return self._skeleton
+
     @property
     def keypoint_names(self):
         return self._keypoint_names
@@ -213,11 +239,13 @@ class CocoDataset(utils.Dataset):
         if dataType == "minival" or dataType == "valminusminival":
             imgDir = "{}/{}{}".format(dataDir, "val", dataYear)
             imgZipFile = "{}/{}{}.zip".format(dataDir, "val", dataYear)
-            imgURL = "http://images.cocodataset.org/zips/{}{}.zip".format("val", dataYear)
+            imgURL = "http://images.cocodataset.org/zips/{}{}.zip".format(
+                "val", dataYear)
         else:
             imgDir = "{}/{}{}".format(dataDir, dataType, dataYear)
             imgZipFile = "{}/{}{}.zip".format(dataDir, dataType, dataYear)
-            imgURL = "http://images.cocodataset.org/zips/{}{}.zip".format(dataType, dataYear)
+            imgURL = "http://images.cocodataset.org/zips/{}{}.zip".format(
+                dataType, dataYear)
         # print("Image paths:"); print(imgDir); print(imgZipFile); print(imgURL)
 
         # Create main folder if it doesn't exist yet
@@ -245,14 +273,18 @@ class CocoDataset(utils.Dataset):
             annURL = "https://dl.dropboxusercontent.com/s/o43o90bna78omob/instances_minival2014.json.zip?dl=0"
             unZipDir = annDir
         elif dataType == "valminusminival":
-            annZipFile = "{}/instances_valminusminival2014.json.zip".format(dataDir)
+            annZipFile = "{}/instances_valminusminival2014.json.zip".format(
+                dataDir)
             annFile = "{}/instances_valminusminival2014.json".format(annDir)
             annURL = "https://dl.dropboxusercontent.com/s/s3tw5zcg7395368/instances_valminusminival2014.json.zip?dl=0"
             unZipDir = annDir
         else:
-            annZipFile = "{}/annotations_trainval{}.zip".format(dataDir, dataYear)
-            annFile = "{}/instances_{}{}.json".format(annDir, dataType, dataYear)
-            annURL = "http://images.cocodataset.org/annotations/annotations_trainval{}.zip".format(dataYear)
+            annZipFile = "{}/annotations_trainval{}.zip".format(
+                dataDir, dataYear)
+            annFile = "{}/instances_{}{}.json".format(
+                annDir, dataType, dataYear)
+            annURL = "http://images.cocodataset.org/annotations/annotations_trainval{}.zip".format(
+                dataYear)
             unZipDir = dataDir
         # print("Annotations paths:"); print(annDir); print(annFile); print(annZipFile); print(annURL)
 
@@ -261,7 +293,10 @@ class CocoDataset(utils.Dataset):
             os.makedirs(annDir)
         if not os.path.exists(annFile):
             if not os.path.exists(annZipFile):
-                print("Downloading zipped annotations to " + annZipFile + " ...")
+                print(
+                    "Downloading zipped annotations to " +
+                    annZipFile +
+                    " ...")
                 with urllib.request.urlopen(annURL) as resp, open(annZipFile, 'wb') as out:
                     shutil.copyfileobj(resp, out)
                 print("... done downloading.")
@@ -310,7 +345,8 @@ class CocoDataset(utils.Dataset):
                     # For crowd masks, annToMask() sometimes returns a mask
                     # smaller than the given dimensions. If so, resize it.
                     if m.shape[0] != image_info["height"] or m.shape[1] != image_info["width"]:
-                        m = np.ones([image_info["height"], image_info["width"]], dtype=bool)
+                        m = np.ones(
+                            [image_info["height"], image_info["width"]], dtype=bool)
                 instance_masks.append(m)
                 class_ids.append(class_id)
 
@@ -322,7 +358,6 @@ class CocoDataset(utils.Dataset):
         else:
             # Call super class to return an empty mask
             return super(CocoDataset, self).load_mask(image_id)
-
 
     def load_keypoints(self, image_id):
         """Load person keypoints for the given image.
@@ -350,7 +385,7 @@ class CocoDataset(utils.Dataset):
             assert class_id == 1
             if class_id:
 
-                #load masks
+                # load masks
                 m = self.annToMask(annotation, image_info["height"],
                                    image_info["width"])
                 # Some objects are so small that they're less than 1 pixel area
@@ -364,18 +399,19 @@ class CocoDataset(utils.Dataset):
                     # For crowd masks, annToMask() sometimes returns a mask
                     # smaller than the given dimensions. If so, resize it.
                     if m.shape[0] != image_info["height"] or m.shape[1] != image_info["width"]:
-                        m = np.ones([image_info["height"], image_info["width"]], dtype=bool)
+                        m = np.ones(
+                            [image_info["height"], image_info["width"]], dtype=bool)
                 instance_masks.append(m)
-                #load keypoints
+                # load keypoints
                 keypoint = annotation["keypoints"]
-                keypoint = np.reshape(keypoint,(-1,3))
+                keypoint = np.reshape(keypoint, (-1, 3))
 
                 keypoints.append(keypoint)
                 class_ids.append(class_id)
 
         # Pack instance masks into an array
         if class_ids:
-            keypoints = np.array(keypoints,dtype=np.int32)
+            keypoints = np.array(keypoints, dtype=np.int32)
             class_ids = np.array(class_ids, dtype=np.int32)
             masks = np.stack(instance_masks, axis=2)
             return keypoints, masks, class_ids
@@ -444,16 +480,28 @@ def build_coco_results(dataset, image_ids, rois, class_ids, scores, masks):
 
             result = {
                 "image_id": image_id,
-                "category_id": dataset.get_source_class_id(class_id, "coco"),
-                "bbox": [bbox[1], bbox[0], bbox[3] - bbox[1], bbox[2] - bbox[0]],
+                "category_id": dataset.get_source_class_id(
+                    class_id,
+                    "coco"),
+                "bbox": [
+                    bbox[1],
+                    bbox[0],
+                    bbox[3] - bbox[1],
+                    bbox[2] - bbox[0]],
                 "score": score,
-                "segmentation": maskUtils.encode(np.asfortranarray(mask))
-            }
+                "segmentation": maskUtils.encode(
+                    np.asfortranarray(mask))}
             results.append(result)
     return results
 
 
-def evaluate_coco(model, dataset, coco, eval_type="bbox", limit=0, image_ids=None):
+def evaluate_coco(
+        model,
+        dataset,
+        coco,
+        eval_type="bbox",
+        limit=0,
+        image_ids=None):
     """Runs official COCO evaluation.
     dataset: A Dataset object with valiadtion data
     eval_type: "bbox" or "segm" for bounding box or segmentation evaluation
@@ -520,10 +568,12 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', required=True,
                         metavar="/path/to/coco/",
                         help='Directory of the MS-COCO dataset')
-    parser.add_argument('--year', required=False,
-                        default=DEFAULT_DATASET_YEAR,
-                        metavar="<year>",
-                        help='Year of the MS-COCO dataset (2014 or 2017) (default=2014)')
+    parser.add_argument(
+        '--year',
+        required=False,
+        default=DEFAULT_DATASET_YEAR,
+        metavar="<year>",
+        help='Year of the MS-COCO dataset (2014 or 2017) (default=2014)')
     parser.add_argument('--model', required=True,
                         metavar="/path/to/weights.h5",
                         help="Path to weights .h5 file or 'coco'")
@@ -535,11 +585,13 @@ if __name__ == '__main__':
                         default=500,
                         metavar="<image count>",
                         help='Images to use for evaluation (default=500)')
-    parser.add_argument('--download', required=False,
-                        default=False,
-                        metavar="<True|False>",
-                        help='Automatically download and unzip MS-COCO files (default=False)',
-                        type=bool)
+    parser.add_argument(
+        '--download',
+        required=False,
+        default=False,
+        metavar="<True|False>",
+        help='Automatically download and unzip MS-COCO files (default=False)',
+        type=bool)
     args = parser.parse_args()
     print("Command: ", args.command)
     print("Model: ", args.model)
@@ -590,13 +642,25 @@ if __name__ == '__main__':
         # Training dataset. Use the training set and 35K from the
         # validation set, as as in the Mask RCNN paper.
         dataset_train = CocoDataset()
-        dataset_train.load_coco(args.dataset, "train", year=args.year, auto_download=args.download)
-        dataset_train.load_coco(args.dataset, "valminusminival", year=args.year, auto_download=args.download)
+        dataset_train.load_coco(
+            args.dataset,
+            "train",
+            year=args.year,
+            auto_download=args.download)
+        dataset_train.load_coco(
+            args.dataset,
+            "valminusminival",
+            year=args.year,
+            auto_download=args.download)
         dataset_train.prepare()
 
         # Validation dataset
         dataset_val = CocoDataset()
-        dataset_val.load_coco(args.dataset, "minival", year=args.year, auto_download=args.download)
+        dataset_val.load_coco(
+            args.dataset,
+            "minival",
+            year=args.year,
+            auto_download=args.download)
         dataset_val.prepare()
 
         # *** This training schedule is an example. Update to your needs ***
@@ -627,7 +691,12 @@ if __name__ == '__main__':
     elif args.command == "evaluate":
         # Validation dataset
         dataset_val = CocoDataset()
-        coco = dataset_val.load_coco(args.dataset, "minival", year=args.year, return_coco=True, auto_download=args.download)
+        coco = dataset_val.load_coco(
+            args.dataset,
+            "minival",
+            year=args.year,
+            return_coco=True,
+            auto_download=args.download)
         dataset_val.prepare()
         print("Running COCO evaluation on {} images.".format(args.limit))
         evaluate_coco(model, dataset_val, coco, "bbox", limit=int(args.limit))

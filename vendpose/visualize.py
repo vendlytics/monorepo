@@ -156,7 +156,17 @@ def display_instances(image, boxes, masks, class_ids, class_names,
             ax.add_patch(p)
     ax.imshow(masked_image.astype(np.uint8))
     plt.show()
-def display_image_keypoint_mask(image, boxes, keypoints, keypoint_weight, class_ids, class_names, config, iskeypointlabel=True):
+
+
+def display_image_keypoint_mask(
+        image,
+        boxes,
+        keypoints,
+        keypoint_weight,
+        class_ids,
+        class_names,
+        config,
+        iskeypointlabel=True):
     """
        keypoints: [num_instance, num_keypoints] Every value is a int label which indicates the position ([0,56*56)) of the joint
        keypoint_weight: [num_instance, num_keypoints]
@@ -169,11 +179,12 @@ def display_image_keypoint_mask(image, boxes, keypoints, keypoint_weight, class_
     boxes = boxes[non_zeros]
     keypoint_weight = keypoint_weight[non_zeros, :]
     class_ids = class_ids[non_zeros]
-    if(iskeypointlabel):# convert the label of joint into coordinate
+    if(iskeypointlabel):  # convert the label of joint into coordinate
         keypoint_label = keypoints[non_zeros, :]
         J_y = keypoint_label // config.KEYPOINT_MASK_SHAPE[1]
         J_x = keypoint_label % config.KEYPOINT_MASK_SHAPE[1]
-        box_scales = np.array([image.shape[0], image.shape[1], image.shape[0], image.shape[1]])
+        box_scales = np.array(
+            [image.shape[0], image.shape[1], image.shape[0], image.shape[1]])
         box_scales = np.reshape(box_scales, (1, -1))
         boxes = np.array(boxes * box_scales)
         box_height = boxes[:, 2] - boxes[:, 0]
@@ -200,36 +211,33 @@ def display_image_keypoint_mask(image, boxes, keypoints, keypoint_weight, class_
         # log("keypoints", keypoints)
     else:
 
-        y1 = boxes[:,0]
-        x1 = boxes[:,1]
-        y2 = boxes[:,2]
-        x2 = boxes[:,3]
-        h = y2-y1
-        w = x2-x1
-        h = np.expand_dims(h,-1)
-        w = np.expand_dims(w,-1)
-        x1 = np.expand_dims(x1,-1)
-        x2 = np.expand_dims(x2,-1)
-        y1 = np.expand_dims(y1,-1)
-        y2 = np.expand_dims(y2,-1)
+        y1 = boxes[:, 0]
+        x1 = boxes[:, 1]
+        y2 = boxes[:, 2]
+        x2 = boxes[:, 3]
+        h = y2 - y1
+        w = x2 - x1
+        h = np.expand_dims(h, -1)
+        w = np.expand_dims(w, -1)
+        x1 = np.expand_dims(x1, -1)
+        x2 = np.expand_dims(x2, -1)
+        y1 = np.expand_dims(y1, -1)
+        y2 = np.expand_dims(y2, -1)
         keypoints = keypoints[non_zeros, :, :]
-        heatmap_scale_h = h*image.shape[0]/config.KEYPOINT_MASK_SHAPE[0]
-        heatmap_scale_w = w *image.shape[1] / config.KEYPOINT_MASK_SHAPE[1]
+        heatmap_scale_h = h * image.shape[0] / config.KEYPOINT_MASK_SHAPE[0]
+        heatmap_scale_w = w * image.shape[1] / config.KEYPOINT_MASK_SHAPE[1]
 
-        keypoints[:, :, 0] = keypoints[:, :, 0] *heatmap_scale_w + x1*image.shape[1]
-        keypoints[:, :, 1] = keypoints[:, :, 1] *heatmap_scale_h + y1*image.shape[0]
+        keypoints[:, :, 0] = keypoints[:, :, 0] * \
+            heatmap_scale_w + x1 * image.shape[1]
+        keypoints[:, :, 1] = keypoints[:, :, 1] * \
+            heatmap_scale_h + y1 * image.shape[0]
 
-        box_scales = np.array([image.shape[0], image.shape[1], image.shape[0], image.shape[1]])
+        box_scales = np.array(
+            [image.shape[0], image.shape[1], image.shape[0], image.shape[1]])
         box_scales = np.reshape(box_scales, (1, -1))
         boxes = np.array(boxes * box_scales)
 
-
-
     display_keypoints(image, boxes, keypoints, class_ids, class_names)
-
-
-
-
 
     # num_keypoint = np.shape(keypoint_weight)[-1]
     # image_shape = np.shape(image)
@@ -281,11 +289,8 @@ def display_image_keypoint_mask(image, boxes, keypoints, keypoint_weight, class_
     #
 
 
-
-
-
 def display_keypoints(image, boxes, keypoints, class_ids, class_names,
-                      skeleton = [], scores=None, title="",
+                      skeleton=[], scores=None, title="",
                       figsize=(16, 16), ax=None):
     """
     boxes: [num_persons, (y1, x1, y2, x2)] in image coordinates.
@@ -340,18 +345,31 @@ def display_keypoints(image, boxes, keypoints, class_ids, class_names,
                 color='w', size=11, backgroundcolor="none")
         # Keypoints: num_person, num_keypoint, 3
         for Joint in keypoints[i]:
-            if(Joint[2]!=0):
-                circle = patches.Circle((Joint[0],Joint[1]),radius=1,edgecolor=color,facecolor='none')
+            if(Joint[2] != 0):
+                circle = patches.Circle(
+                    (Joint[0], Joint[1]), radius=1, edgecolor=color, facecolor='none')
                 ax.add_patch(circle)
 
         # Skeleton: 11*2
-        limb_colors = [[0, 0, 255], [0, 170, 255], [0, 255, 170], [0, 255, 0], [170, 255, 0],
-                  [255, 170, 0], [255, 0, 0], [255, 0, 170], [170, 0, 255], [170,170,0],[170,0,170]]
+        limb_colors = [
+            [
+                0, 0, 255], [
+                0, 170, 255], [
+                0, 255, 170], [
+                    0, 255, 0], [
+                        170, 255, 0], [
+                            255, 170, 0], [
+                                255, 0, 0], [
+                                    255, 0, 170], [
+                                        170, 0, 255], [
+                                            170, 170, 0], [
+                                                170, 0, 170]]
         if(len(skeleton)):
-            skeleton = np.reshape(skeleton,(-1,2))
-            neck = np.array((keypoints[i, 5, :] + keypoints[i,6,:])/2).astype(int)
-            if(keypoints[i, 5, 2] == 0 or keypoints[i,6,2] == 0):
-                neck = [0,0,0]
+            skeleton = np.reshape(skeleton, (-1, 2))
+            neck = np.array(
+                (keypoints[i, 5, :] + keypoints[i, 6, :]) / 2).astype(int)
+            if(keypoints[i, 5, 2] == 0 or keypoints[i, 6, 2] == 0):
+                neck = [0, 0, 0]
             limb_index = -1
             for limb in skeleton:
                 limb_index += 1
@@ -368,12 +386,20 @@ def display_keypoints(image, boxes, keypoints, class_ids, class_names,
                 # Joint:(x,y,v)
                 if ((Joint_start[2] != 0) & (Joint_end[2] != 0)):
                     # print(color)
-                    cv2.line(skeleton_image, tuple(Joint_start[:2]), tuple(Joint_end[:2]), limb_colors[limb_index],5)
+                    cv2.line(skeleton_image, tuple(Joint_start[:2]), tuple(
+                        Joint_end[:2]), limb_colors[limb_index], 5)
     ax.imshow(skeleton_image.astype(np.uint8))
     plt.show()
-    
 
-def draw_rois(image, rois, refined_rois, mask, class_ids, class_names, limit=10):
+
+def draw_rois(
+        image,
+        rois,
+        refined_rois,
+        mask,
+        class_ids,
+        class_names,
+        limit=10):
     """
     anchors: [n, (y1, x1, y2, x2)] list of anchors in image coordinates.
     proposals: [n, 4] the same anchors but refined to fit objects better.
@@ -409,10 +435,17 @@ def draw_rois(image, rois, refined_rois, mask, class_ids, class_names, limit=10)
         # Refined ROI
         if class_id:
             ry1, rx1, ry2, rx2 = refined_rois[id]
-            p = patches.Rectangle((rx1, ry1), rx2 - rx1, ry2 - ry1, linewidth=2,
-                                  edgecolor=color, facecolor='none')
+            p = patches.Rectangle(
+                (rx1,
+                 ry1),
+                rx2 - rx1,
+                ry2 - ry1,
+                linewidth=2,
+                edgecolor=color,
+                facecolor='none')
             ax.add_patch(p)
-            # Connect the top-left corners of the anchor and proposal for easy visualization
+            # Connect the top-left corners of the anchor and proposal for easy
+            # visualization
             ax.add_line(lines.Line2D([x1, rx1], [y1, ry1], color=color))
 
             # Label
@@ -591,8 +624,14 @@ def draw_boxes(image, boxes=None, refined_boxes=None,
         # Refined boxes
         if refined_boxes is not None and visibility > 0:
             ry1, rx1, ry2, rx2 = refined_boxes[i].astype(np.int32)
-            p = patches.Rectangle((rx1, ry1), rx2 - rx1, ry2 - ry1, linewidth=2,
-                                  edgecolor=color, facecolor='none')
+            p = patches.Rectangle(
+                (rx1,
+                 ry1),
+                rx2 - rx1,
+                ry2 - ry1,
+                linewidth=2,
+                edgecolor=color,
+                facecolor='none')
             ax.add_patch(p)
             # Connect the top-left corners of the anchor and proposal
             if boxes is not None:
