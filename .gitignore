@@ -1,7 +1,7 @@
 models/
 videos/
 output/
-data/
+data*
 *.pyc
 *.swp
 .ipynb_checkpoints/

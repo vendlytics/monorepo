@@ -187,7 +187,7 @@ if __name__ == '__main__':
                     line[4])), float(
                 line[5])
 
-            if conf >= 0.99:
+            if conf >= 0.9995:
                 bbox_width = abs(x_max - x_min)
                 bbox_height = abs(y_max - y_min)
                 # x_min -= 3 * bbox_width / 4
