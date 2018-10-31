@@ -5,11 +5,12 @@
 import sys
 import os
 import argparse
+from multiprocessing import Pool
 
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='Face and gaze detection in streaming fashion')
+        description='Face and gaze detection stream pipeline')
     parser.add_argument(
         '--gpu',
         dest='gpu_id',
@@ -19,26 +20,23 @@ def parse_args():
     parser.add_argument(
         '--face_snapshot',
         dest='face_snapshot',
-        help='Path of model snapshot.',
+        help='Path of face detection model snapshot.',
         default='',
         type=str)
     parser.add_argument(
-        '--video',
+        '--gaze_snapshot',
+        dest='gaze_snapshot',
+        help='Path of gaze detection model snapshot.',
+        default='',
+        type=str)
+    parser.add_argument(
+        '--video_path',
         dest='video_path',
         help='Path of original video')
-    parser.add_argument(
-        '--bboxes',
-        dest='bboxes',
-        help='Bounding box annotations of frames')
     parser.add_argument(
         '--output_string',
         dest='output_string',
         help='String appended to output file')
-    parser.add_argument(
-        '--n_frames',
-        dest='n_frames',
-        help='Number of frames',
-        type=int)
     parser.add_argument(
         '--fps',
         dest='fps',
@@ -49,18 +47,17 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+def run_process(process):
+    os.system('python {}'.format(process))
 
 if __name__ == '__main__':
     args = parse_args()
 
+    # start the vendnet process
+    pool = Pool(processes=2)
 
-# start the vendnet process
+    # start producing the output from stream to topic
+    pool.map(run_process, 'vendnet/stream_worker.py')
 
-
-# start producing the output from stream to topic
-
-
-# start the vendgaze process
-
-# start consuming the output from topic to vendgaze
-# to inform where bounding boxes are and write to open file
+    # start the vendgaze process
+    pool.map(run_process, 'vendgaze/stream_worker.py')
