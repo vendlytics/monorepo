@@ -1,4 +1,6 @@
-import sys, os, argparse
+import sys
+import os
+import argparse
 
 import numpy as np
 import cv2
@@ -14,22 +16,50 @@ import torchvision
 import torch.nn.functional as F
 from PIL import Image
 
-import datasets, vendgaze, utils
+import datasets
+import vendgaze
+import utils
+
 
 def parse_args():
     """Parse input arguments."""
-    parser = argparse.ArgumentParser(description='Head pose estimation using the Vendgaze network.')
-    parser.add_argument('--gpu', dest='gpu_id', help='GPU device id to use [0]',
-            default=0, type=int)
-    parser.add_argument('--snapshot', dest='snapshot', help='Path of model snapshot.',
-          default='', type=str)
+    parser = argparse.ArgumentParser(
+        description='Head pose estimation using the Vendgaze network.')
+    parser.add_argument(
+        '--gpu',
+        dest='gpu_id',
+        help='GPU device id to use [0]',
+        default=0,
+        type=int)
+    parser.add_argument(
+        '--snapshot',
+        dest='snapshot',
+        help='Path of model snapshot.',
+        default='',
+        type=str)
     parser.add_argument('--video', dest='video_path', help='Path of video')
-    parser.add_argument('--bboxes', dest='bboxes', help='Bounding box annotations of frames')
-    parser.add_argument('--output_string', dest='output_string', help='String appended to output file')
-    parser.add_argument('--n_frames', dest='n_frames', help='Number of frames', type=int)
-    parser.add_argument('--fps', dest='fps', help='Frames per second of source video', type=float, default=30.)
+    parser.add_argument(
+        '--bboxes',
+        dest='bboxes',
+        help='Bounding box annotations of frames')
+    parser.add_argument(
+        '--output_string',
+        dest='output_string',
+        help='String appended to output file')
+    parser.add_argument(
+        '--n_frames',
+        dest='n_frames',
+        help='Number of frames',
+        type=int)
+    parser.add_argument(
+        '--fps',
+        dest='fps',
+        help='Frames per second of source video',
+        type=float,
+        default=30.)
     args = parser.parse_args()
     return args
+
 
 if __name__ == '__main__':
     args = parse_args()
@@ -49,7 +79,9 @@ if __name__ == '__main__':
         sys.exit('Video does not exist')
 
     # ResNet50 structure
-    model = vendgaze.Vendgaze(torchvision.models.resnet.Bottleneck, [3, 4, 6, 3], 66)
+    model = vendgaze.Vendgaze(
+        torchvision.models.resnet.Bottleneck, [
+            3, 4, 6, 3], 66)
 
     print 'Loading snapshot.'
     # Load snapshot
@@ -58,9 +90,20 @@ if __name__ == '__main__':
 
     print 'Loading data.'
 
-    transformations = transforms.Compose([transforms.Scale(224),
-    transforms.CenterCrop(224), transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+    transformations = transforms.Compose(
+        [
+            transforms.Scale(224),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize(
+                mean=[
+                    0.485,
+                    0.456,
+                    0.406],
+                std=[
+                    0.229,
+                    0.224,
+                    0.225])])
 
     model.cuda(gpu)
 
@@ -76,20 +119,21 @@ if __name__ == '__main__':
     video = cv2.VideoCapture(video_path)
 
     # New cv2
-    # width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))   # float
-    # height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT)) # float
+    width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))   # float
+    height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))  # float
 
     # Define the codec and create VideoWriter object
-    # fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-    # out = cv2.VideoWriter('output/video/output-%s.avi' % args.output_string, fourcc, args.fps, (width, height))
+    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+    out = cv2.VideoWriter('output/video/output-%s.avi' %
+                          args.output_string, fourcc, args.fps, (width, height))
 
     # Old cv2
-    width = int(video.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH))   # float
-    height = int(video.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT)) # float
-    
+    # width = int(video.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH))   # float
+    # height = int(video.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT)) # float
+
     # # Define the codec and create VideoWriter object
-    fourcc = cv2.cv.CV_FOURCC(*'MJPG')
-    out = cv2.VideoWriter('output/video/output-%s.avi' % args.output_string, fourcc, 30.0, (width, height))
+    # fourcc = cv2.cv.CV_FOURCC(*'MJPG')
+    # out = cv2.VideoWriter('output/video/output-%s.avi' % args.output_string, fourcc, 30.0, (width, height))
 
     txt_out = open('output/video/output-%s.txt' % args.output_string, 'w')
 
@@ -98,11 +142,13 @@ if __name__ == '__main__':
     with open(args.bboxes, 'r') as f:
         bbox_line_list = f.read().splitlines()
 
+    SEPARATOR = '\t'
+
     idx = 0
     while idx < len(bbox_line_list):
         line = bbox_line_list[idx]
         line = line.strip('\n')
-        line = line.split(' ')
+        line = line.split(SEPARATOR)
         det_frame_num = int(line[0])
 
         print frame_num
@@ -115,7 +161,7 @@ if __name__ == '__main__':
         # Save all frames as they are if they don't have bbox annotation.
         while frame_num < det_frame_num:
             ret, frame = video.read()
-            if ret == False:
+            if not ret:
                 out.release()
                 video.release()
                 txt_out.close()
@@ -124,15 +170,24 @@ if __name__ == '__main__':
             frame_num += 1
 
         # Start processing frame with bounding box
-        ret,frame = video.read()
-        if ret == False:
+        ret, frame = video.read()
+        if not ret:
             break
-        cv2_frame = cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
+        cv2_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         while True:
-            x_min, y_min, x_max, y_max, conf = int(float(line[1])), int(float(line[2])), int(float(line[3])), int(float(line[4])), float(line[5])
+            x_min, y_min, x_max, y_max, conf = int(
+                float(
+                    line[1])), int(
+                float(
+                    line[2])), int(
+                float(
+                    line[3])), int(
+                float(
+                    line[4])), float(
+                line[5])
 
-            if conf > 0.98:
+            if conf > 0.999:
                 bbox_width = abs(x_max - x_min)
                 bbox_height = abs(y_max - y_min)
                 # x_min -= 3 * bbox_width / 4
@@ -143,12 +198,14 @@ if __name__ == '__main__':
                 x_max += 50
                 y_min -= 50
                 y_max += 30
+
                 x_min = max(x_min, 0)
                 y_min = max(y_min, 0)
                 x_max = min(frame.shape[1], x_max)
                 y_max = min(frame.shape[0], y_max)
+
                 # Crop image
-                img = cv2_frame[y_min:y_max,x_min:x_max]
+                img = cv2_frame[y_min:y_max, x_min:x_max]
                 img = Image.fromarray(img)
 
                 # Transform
@@ -162,25 +219,41 @@ if __name__ == '__main__':
                 yaw_predicted = F.softmax(yaw)
                 pitch_predicted = F.softmax(pitch)
                 roll_predicted = F.softmax(roll)
-                
+
                 # Get continuous predictions in degrees.
-                yaw_predicted = torch.sum(yaw_predicted.data[0] * idx_tensor) * 3 - 99
-                pitch_predicted = torch.sum(pitch_predicted.data[0] * idx_tensor) * 3 - 99
-                roll_predicted = torch.sum(roll_predicted.data[0] * idx_tensor) * 3 - 99
+                yaw_predicted = torch.sum(
+                    yaw_predicted.data[0] * idx_tensor) * 3 - 99
+                pitch_predicted = torch.sum(
+                    pitch_predicted.data[0] * idx_tensor) * 3 - 99
+                roll_predicted = torch.sum(
+                    roll_predicted.data[0] * idx_tensor) * 3 - 99
 
                 # Print new frame with cube and axis
-                txt_out.write(str(frame_num) + ' %f %f %f\n' % (yaw_predicted, pitch_predicted, roll_predicted))
+                txt_out.write(
+                    str(frame_num) + ' %f %f %f\n' %
+                    (yaw_predicted, pitch_predicted, roll_predicted))
                 # utils.plot_pose_cube(frame, yaw_predicted, pitch_predicted, roll_predicted, (x_min + x_max) / 2, (y_min + y_max) / 2, size = bbox_width)
-                utils.draw_axis(frame, yaw_predicted, pitch_predicted, roll_predicted, tdx = (x_min + x_max) / 2, tdy= (y_min + y_max) / 2, size = bbox_height/2)
+                utils.draw_axis(
+                    frame,
+                    yaw_predicted,
+                    pitch_predicted,
+                    roll_predicted,
+                    tdx=(
+                        x_min + x_max) / 2,
+                    tdy=(
+                        y_min + y_max) / 2,
+                    size=bbox_height / 2)
                 # Plot expanded bounding box
-                # cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), (0,255,0), 1)
+                cv2.rectangle(
+                    frame, (x_min, y_min), (x_max, y_max), (0, 255, 0), 1)
 
             # Peek next frame detection
-            next_frame_num = int(bbox_line_list[idx+1].strip('\n').split(' ')[0])
+            next_frame_num = int(
+                bbox_line_list[idx + 1].strip('\n').split(SEPARATOR)[0])
             # print 'next_frame_num ', next_frame_num
             if next_frame_num == det_frame_num:
                 idx += 1
-                line = bbox_line_list[idx].strip('\n').split(' ')
+                line = bbox_line_list[idx].strip('\n').split(SEPARATOR)
                 det_frame_num = int(line[0])
             else:
                 break

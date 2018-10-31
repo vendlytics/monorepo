@@ -16,7 +16,8 @@ from Cython.Distutils import build_ext
 
 def find_in_path(name, path):
     "Find a file in a search path"
-    # adapted fom http://code.activestate.com/recipes/52224-find-a-file-given-a-search-path/
+    # adapted fom
+    # http://code.activestate.com/recipes/52224-find-a-file-given-a-search-path/
     for dir in path.split(os.pathsep):
         binpath = pjoin(dir, name)
         if os.path.exists(binpath):
@@ -33,7 +34,7 @@ def find_in_path(name, path):
 #     Starts by looking for the CUDAHOME env variable. If not found, everything
 #     is based on finding 'nvcc' in the PATH.
 #     """
-# 
+#
 #     # first check if the CUDAHOME env variable is in use
 #     if 'CUDAHOME' in os.environ:
 #         home = os.environ['CUDAHOME']

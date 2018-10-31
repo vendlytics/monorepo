@@ -7,3 +7,11 @@ This is Vendlytics' monorepo. More detail project descriptions and setup instruc
 * **Vendflow** - Workflow orchestration
 * **Vendnet** - Face detection tool built off of Faster-RCNN
 * **Vendpose** - Pose extraction built off of Mask R-CNN
+
+### Linting
+
+Autolint with:
+
+```
+autopep8 --in-place --aggressive --aggressive **/*.py
+```
