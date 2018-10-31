@@ -27,7 +27,7 @@ from .voc_eval import voc_eval
 
 # TODO: make fast_rcnn irrelevant
 # >>>> obsolete, because it depends on sth outside of this project
-from model.utils.config import cfg
+from model.utils.config import config
 
 try:
     xrange          # Python 2
@@ -113,7 +113,7 @@ class pascal_voc(imdb):
         """
         Return the default path where PASCAL VOC is expected to be installed.
         """
-        return os.path.join(cfg.DATA_DIR, 'VOCdevkit' + self._year)
+        return os.path.join(config.DATA_DIR, 'VOCdevkit' + self._year)
 
     def gt_roidb(self):
         """
@@ -184,7 +184,7 @@ class pascal_voc(imdb):
         return self.create_roidb_from_box_list(box_list, gt_roidb)
 
     def _load_selective_search_roidb(self, gt_roidb):
-        filename = os.path.abspath(os.path.join(cfg.DATA_DIR,
+        filename = os.path.abspath(os.path.join(config.DATA_DIR,
                                                 'selective_search_data',
                                                 self.name + '.mat'))
         assert os.path.exists(filename), \
@@ -336,10 +336,10 @@ class pascal_voc(imdb):
         print('-----------------------------------------------------')
         print('Computing results with the official MATLAB eval code.')
         print('-----------------------------------------------------')
-        path = os.path.join(cfg.ROOT_DIR, 'lib', 'datasets',
+        path = os.path.join(config.ROOT_DIR, 'lib', 'datasets',
                             'VOCdevkit-matlab-wrapper')
         cmd = 'cd {} && '.format(path)
-        cmd += '{:s} -nodisplay -nodesktop '.format(cfg.MATLAB)
+        cmd += '{:s} -nodisplay -nodesktop '.format(config.MATLAB)
         cmd += '-r "dbstop if error; '
         cmd += 'voc_eval(\'{:s}\',\'{:s}\',\'{:s}\',\'{:s}\'); quit;"' \
             .format(self._devkit_path, self._get_comp_id(),

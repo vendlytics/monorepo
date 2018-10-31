@@ -14,7 +14,7 @@ import PIL
 from model.utils.cython_bbox import bbox_overlaps
 import numpy as np
 import scipy.sparse
-from model.utils.config import cfg
+from model.utils.config import config
 import pdb
 
 ROOT_DIR = osp.join(osp.dirname(__file__), '..', '..')
@@ -78,7 +78,7 @@ class imdb(object):
 
   @property
   def cache_path(self):
-    cache_path = osp.abspath(osp.join(cfg.DATA_DIR, 'cache'))
+    cache_path = osp.abspath(osp.join(config.DATA_DIR, 'cache'))
     if not os.path.exists(cache_path):
       os.makedirs(cache_path)
     return cache_path

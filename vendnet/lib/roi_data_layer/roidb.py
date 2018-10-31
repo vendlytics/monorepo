@@ -5,7 +5,7 @@ from __future__ import print_function
 
 import datasets
 import numpy as np
-from model.utils.config import cfg
+from model.utils.config import config
 from datasets.factory import get_imdb
 import PIL
 import pdb
@@ -92,7 +92,7 @@ def combined_roidb(imdb_names, training=True):
 
   def get_training_roidb(imdb):
     """Returns a roidb (Region of Interest database) for use in training."""
-    if cfg.TRAIN.USE_FLIPPED:
+    if config.TRAIN.USE_FLIPPED:
       print('Appending horizontally-flipped training examples...')
       imdb.append_flipped_images()
       print('done')
@@ -108,8 +108,8 @@ def combined_roidb(imdb_names, training=True):
   def get_roidb(imdb_name):
     imdb = get_imdb(imdb_name)
     print('Loaded dataset `{:s}` for training'.format(imdb.name))
-    imdb.set_proposal_method(cfg.TRAIN.PROPOSAL_METHOD)
-    print('Set proposal method: {:s}'.format(cfg.TRAIN.PROPOSAL_METHOD))
+    imdb.set_proposal_method(config.TRAIN.PROPOSAL_METHOD)
+    print('Set proposal method: {:s}'.format(config.TRAIN.PROPOSAL_METHOD))
     roidb = get_training_roidb(imdb)
     return roidb
 

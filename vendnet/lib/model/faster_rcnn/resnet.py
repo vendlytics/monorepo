@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from model.utils.config import cfg
+from model.utils.config import config
 from model.faster_rcnn.faster_rcnn import _fasterRCNN
 
 import torch
@@ -250,12 +250,12 @@ class resnet(_fasterRCNN):
     for p in self.RCNN_base[0].parameters(): p.requires_grad=False
     for p in self.RCNN_base[1].parameters(): p.requires_grad=False
 
-    assert (0 <= cfg.RESNET.FIXED_BLOCKS < 4)
-    if cfg.RESNET.FIXED_BLOCKS >= 3:
+    assert (0 <= config.RESNET.FIXED_BLOCKS < 4)
+    if config.RESNET.FIXED_BLOCKS >= 3:
       for p in self.RCNN_base[6].parameters(): p.requires_grad=False
-    if cfg.RESNET.FIXED_BLOCKS >= 2:
+    if config.RESNET.FIXED_BLOCKS >= 2:
       for p in self.RCNN_base[5].parameters(): p.requires_grad=False
-    if cfg.RESNET.FIXED_BLOCKS >= 1:
+    if config.RESNET.FIXED_BLOCKS >= 1:
       for p in self.RCNN_base[4].parameters(): p.requires_grad=False
 
     def set_bn_fix(m):

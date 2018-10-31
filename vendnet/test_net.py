@@ -23,7 +23,7 @@ import torch.optim as optim
 import pickle
 from roi_data_layer.roidb import combined_roidb
 from roi_data_layer.roibatchLoader import roibatchLoader
-from model.utils.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
+from model.utils.config import config, config_from_file, config_from_list, get_output_dir
 from model.rpn.bbox_transform import clip_boxes
 from model.nms.nms_wrapper import nms
 from model.rpn.bbox_transform import bbox_transform_inv
@@ -47,13 +47,13 @@ def parse_args():
     parser.add_argument('--dataset', dest='dataset',
                         help='training dataset',
                         default='wider_face', type=str)
-    parser.add_argument('--cfg', dest='cfg_file',
+    parser.add_argument('--config', dest='config_file',
                         help='optional config file',
-                        default='cfgs/res101.yml', type=str)
+                        default='configs/res101.yml', type=str)
     parser.add_argument('--net', dest='net',
                         help='vgg16, res50, res101, res152',
                         default='res101', type=str)
-    parser.add_argument('--set', dest='set_cfgs',
+    parser.add_argument('--set', dest='set_configs',
                         help='set config keys', default=None,
                         nargs=argparse.REMAINDER)
     parser.add_argument('--load_dir', dest='load_dir',
@@ -71,9 +71,12 @@ def parse_args():
     parser.add_argument('--cag', dest='class_agnostic',
                         help='whether perform class_agnostic bbox regression',
                         action='store_true')
-    parser.add_argument('--parallel_type', dest='parallel_type',
-                        help='which part of model to parallel, 0: all, 1: model before roi pooling',
-                        default=0, type=int)
+    parser.add_argument(
+        '--parallel_type',
+        dest='parallel_type',
+        help='which part of model to parallel, 0: all, 1: model before roi pooling',
+        default=0,
+        type=int)
     parser.add_argument('--checksession', dest='checksession',
                         help='checksession to load model',
                         default=1, type=int)
@@ -93,9 +96,9 @@ def parse_args():
     return args
 
 
-lr = cfg.TRAIN.LEARNING_RATE
-momentum = cfg.TRAIN.MOMENTUM
-weight_decay = cfg.TRAIN.WEIGHT_DECAY
+lr = config.TRAIN.LEARNING_RATE
+momentum = config.TRAIN.MOMENTUM
+weight_decay = config.TRAIN.WEIGHT_DECAY
 
 if __name__ == '__main__':
 
@@ -107,64 +110,113 @@ if __name__ == '__main__':
     if torch.cuda.is_available() and not args.cuda:
         print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
-    np.random.seed(cfg.RNG_SEED)
+    np.random.seed(config.RNG_SEED)
     if args.dataset == "wider_face":
         args.imdb_name = "wider_face_train"
         args.imdbval_name = "wider_face_val"
         args.imdbtest_name = "wider_face_test"
-        args.set_cfgs = ['ANCHOR_SCALES', '[4, 8, 16, 32]', 'ANCHOR_RATIOS', '[0.5,1,2]', 'MAX_NUM_GT_BOXES', '20']
+        args.set_configs = [
+            'ANCHOR_SCALES',
+            '[4, 8, 16, 32]',
+            'ANCHOR_RATIOS',
+            '[0.5,1,2]',
+            'MAX_NUM_GT_BOXES',
+            '20']
     elif args.dataset == "pascal_voc":
         args.imdb_name = "voc_2007_trainval"
         args.imdbval_name = "voc_2007_test"
-        args.set_cfgs = ['ANCHOR_SCALES', '[8, 16, 32]', 'ANCHOR_RATIOS', '[0.5,1,2]']
+        args.set_configs = [
+            'ANCHOR_SCALES',
+            '[8, 16, 32]',
+            'ANCHOR_RATIOS',
+            '[0.5,1,2]']
     elif args.dataset == "pascal_voc_0712":
         args.imdb_name = "voc_2007_trainval+voc_2012_trainval"
         args.imdbval_name = "voc_2007_test"
-        args.set_cfgs = ['ANCHOR_SCALES', '[8, 16, 32]', 'ANCHOR_RATIOS', '[0.5,1,2]']
+        args.set_configs = [
+            'ANCHOR_SCALES',
+            '[8, 16, 32]',
+            'ANCHOR_RATIOS',
+            '[0.5,1,2]']
     elif args.dataset == "coco":
         args.imdb_name = "coco_2014_train+coco_2014_valminusminival"
         args.imdbval_name = "coco_2014_minival"
-        args.set_cfgs = ['ANCHOR_SCALES', '[4, 8, 16, 32]', 'ANCHOR_RATIOS', '[0.5,1,2]']
+        args.set_configs = [
+            'ANCHOR_SCALES',
+            '[4, 8, 16, 32]',
+            'ANCHOR_RATIOS',
+            '[0.5,1,2]']
     elif args.dataset == "imagenet":
         args.imdb_name = "imagenet_train"
         args.imdbval_name = "imagenet_val"
-        args.set_cfgs = ['ANCHOR_SCALES', '[8, 16, 32]', 'ANCHOR_RATIOS', '[0.5,1,2]']
+        args.set_configs = [
+            'ANCHOR_SCALES',
+            '[8, 16, 32]',
+            'ANCHOR_RATIOS',
+            '[0.5,1,2]']
     elif args.dataset == "vg":
         args.imdb_name = "vg_150-50-50_minitrain"
         args.imdbval_name = "vg_150-50-50_minival"
-        args.set_cfgs = ['ANCHOR_SCALES', '[4, 8, 16, 32]', 'ANCHOR_RATIOS', '[0.5,1,2]']
+        args.set_configs = [
+            'ANCHOR_SCALES',
+            '[4, 8, 16, 32]',
+            'ANCHOR_RATIOS',
+            '[0.5,1,2]']
 
-    args.cfg_file = "cfgs/{}_ls.yml".format(args.net) if args.large_scale else "cfgs/{}.yml".format(args.net)
+    args.config_file = "configs/{}_ls.yml".format(
+        args.net) if args.large_scale else "configs/{}.yml".format(args.net)
 
-    if args.cfg_file is not None:
-        cfg_from_file(args.cfg_file)
-    if args.set_cfgs is not None:
-        cfg_from_list(args.set_cfgs)
+    if args.config_file is not None:
+        config_from_file(args.config_file)
+    if args.set_configs is not None:
+        config_from_list(args.set_configs)
 
     print('Using config:')
-    pprint.pprint(cfg)
+    pprint.pprint(config)
 
-    cfg.TRAIN.USE_FLIPPED = False
-    imdb, roidb, ratio_list, ratio_index = combined_roidb(args.imdbval_name, False)
+    config.TRAIN.USE_FLIPPED = False
+    imdb, roidb, ratio_list, ratio_index = combined_roidb(
+        args.imdbval_name, False)
     imdb.competition_mode(on=True)
 
     print('{:d} roidb entries'.format(len(roidb)))
 
     input_dir = args.load_dir + "/" + args.net + "/" + args.dataset
     if not os.path.exists(input_dir):
-        raise Exception('There is no input directory for loading network from ' + input_dir)
-    load_name = os.path.join(input_dir,
-                             'faster_rcnn_{}_{}_{}.pth'.format(args.checksession, args.checkepoch, args.checkpoint))
+        raise Exception(
+            'There is no input directory for loading network from ' +
+            input_dir)
+    load_name = os.path.join(
+        input_dir,
+        'faster_rcnn_{}_{}_{}.pth'.format(
+            args.checksession,
+            args.checkepoch,
+            args.checkpoint))
 
     # initialize the network here.
     if args.net == 'vgg16':
-        fasterRCNN = vgg16(imdb.classes, pretrained=False, class_agnostic=args.class_agnostic)
+        fasterRCNN = vgg16(
+            imdb.classes,
+            pretrained=False,
+            class_agnostic=args.class_agnostic)
     elif args.net == 'res101':
-        fasterRCNN = resnet(imdb.classes, 101, pretrained=False, class_agnostic=args.class_agnostic)
+        fasterRCNN = resnet(
+            imdb.classes,
+            101,
+            pretrained=False,
+            class_agnostic=args.class_agnostic)
     elif args.net == 'res50':
-        fasterRCNN = resnet(imdb.classes, 50, pretrained=False, class_agnostic=args.class_agnostic)
+        fasterRCNN = resnet(
+            imdb.classes,
+            50,
+            pretrained=False,
+            class_agnostic=args.class_agnostic)
     elif args.net == 'res152':
-        fasterRCNN = resnet(imdb.classes, 152, pretrained=False, class_agnostic=args.class_agnostic)
+        fasterRCNN = resnet(
+            imdb.classes,
+            152,
+            pretrained=False,
+            class_agnostic=args.class_agnostic)
     else:
         print("network is not defined")
         pdb.set_trace()
@@ -175,7 +227,7 @@ if __name__ == '__main__':
     checkpoint = torch.load(load_name)
     fasterRCNN.load_state_dict(checkpoint['model'])
     if 'pooling_mode' in checkpoint.keys():
-        cfg.POOLING_MODE = checkpoint['pooling_mode']
+        config.POOLING_MODE = checkpoint['pooling_mode']
 
     print('load model successfully!')
     # initialize the tensor holder here.
@@ -198,7 +250,7 @@ if __name__ == '__main__':
     gt_boxes = Variable(gt_boxes, volatile=True)
 
     if args.cuda:
-        cfg.CUDA = True
+        config.CUDA = True
 
     if args.cuda:
         fasterRCNN.cuda()
@@ -221,9 +273,12 @@ if __name__ == '__main__':
     output_dir = get_output_dir(imdb, save_name)
     dataset = roibatchLoader(roidb, ratio_list, ratio_index, args.batch_size,
                              imdb.num_classes, training=False, normalize=False)
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size,
-                                             shuffle=False, num_workers=0,
-                                             pin_memory=True)
+    dataloader = torch.utils.data.DataLoader(
+        dataset,
+        batch_size=args.batch_size,
+        shuffle=False,
+        num_workers=0,
+        pin_memory=True)
 
     data_iter = iter(dataloader)
 
@@ -241,25 +296,25 @@ if __name__ == '__main__':
 
         det_tic = time.time()
         rois, cls_prob, bbox_pred, \
-        rpn_loss_cls, rpn_loss_box, \
-        RCNN_loss_cls, RCNN_loss_bbox, \
-        rois_label = fasterRCNN(im_data, im_info, gt_boxes, num_boxes)
+            rpn_loss_cls, rpn_loss_box, \
+            RCNN_loss_cls, RCNN_loss_bbox, \
+            rois_label = fasterRCNN(im_data, im_info, gt_boxes, num_boxes)
 
         scores = cls_prob.data
         boxes = rois.data[:, :, 1:5]
 
-        if cfg.TEST.BBOX_REG:
+        if config.TEST.BBOX_REG:
             # Apply bounding-box regression deltas
             box_deltas = bbox_pred.data
-            if cfg.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED:
+            if config.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED:
                 # Optionally normalize targets by a precomputed mean and stdev
                 if args.class_agnostic:
-                    box_deltas = box_deltas.view(-1, 4) * torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_STDS).cuda() \
-                                 + torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_MEANS).cuda()
+                    box_deltas = box_deltas.view(-1, 4) * torch.FloatTensor(config.TRAIN.BBOX_NORMALIZE_STDS).cuda(
+                    ) + torch.FloatTensor(config.TRAIN.BBOX_NORMALIZE_MEANS).cuda()
                     box_deltas = box_deltas.view(1, -1, 4)
                 else:
-                    box_deltas = box_deltas.view(-1, 4) * torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_STDS).cuda() \
-                                 + torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_MEANS).cuda()
+                    box_deltas = box_deltas.view(-1, 4) * torch.FloatTensor(config.TRAIN.BBOX_NORMALIZE_STDS).cuda(
+                    ) + torch.FloatTensor(config.TRAIN.BBOX_NORMALIZE_MEANS).cuda()
                     box_deltas = box_deltas.view(1, -1, 4 * len(imdb.classes))
 
             pred_boxes = bbox_transform_inv(boxes, box_deltas, 1)
@@ -291,10 +346,11 @@ if __name__ == '__main__':
 
                 cls_dets = torch.cat((cls_boxes, cls_scores.view([-1, 1])), 1)
                 cls_dets = cls_dets[order]
-                keep = nms(cls_dets, cfg.TEST.NMS)
+                keep = nms(cls_dets, config.TEST.NMS)
                 cls_dets = cls_dets[keep.view(-1).long()]
                 if vis:
-                    im2show = vis_detections(im2show, imdb.classes[j], cls_dets.cpu().numpy(), 0.3)
+                    im2show = vis_detections(
+                        im2show, imdb.classes[j], cls_dets.cpu().numpy(), 0.3)
                 all_boxes[j][i] = cls_dets.cpu().numpy()
             else:
                 all_boxes[j][i] = empty_array
@@ -312,7 +368,8 @@ if __name__ == '__main__':
         misc_toc = time.time()
         nms_time = misc_toc - misc_tic
 
-        print('im_detect: {:d}/{:d} {:.3f}s {:.3f}s'.format(i + 1, num_images, detect_time, nms_time))
+        print('im_detect: {:d}/{:d} {:.3f}s {:.3f}s'.format(i +
+                                                            1, num_images, detect_time, nms_time))
 
         if vis:
             cv2.imwrite('result.png', im2show)

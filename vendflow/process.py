@@ -23,6 +23,7 @@ USE_BBOX = False
 
 Ray = namedtuple('Ray', ['origin', 'direction'])
 
+
 def calculate_rectangle_centroid(min_x, min_y, max_x, max_y):
     """
     Returns a tuple (x, y) which gives the position of the face bounding box.
@@ -35,6 +36,7 @@ def calculate_rectangle_area(min_x, min_y, max_x, max_y):
     Returns the pixel area of the face bounding box.
     """
     return (max_x - min_x) * (max_y - min_y)
+
 
 def convert_from_euler_angle_to_vector(yaw_angle, pitch_angle):
     """
@@ -49,6 +51,7 @@ def convert_from_euler_angle_to_vector(yaw_angle, pitch_angle):
         np.sin(pitch_angle_radians)
     ])
 
+
 def calculate_poi(n_vector, ray, dist_estimate):
     """
     Finds the point of intersection of a vector on the shelf plane.
@@ -60,8 +63,10 @@ def calculate_poi(n_vector, ray, dist_estimate):
     Notation from http://www.ambrsoft.com/TrigoCalc/Plan3D/PlaneLineIntersection_.htm
     """
     p_vector = n_vector + dist_estimate
-    t = -(np.dot(n_vector, p_vector) + dist_estimate) / float(np.dot(n_vector, ray.direction))
+    t = -(np.dot(n_vector, p_vector) + dist_estimate) / \
+        float(np.dot(n_vector, ray.direction))
     return ray.origin + ray.direction * t
+
 
 def get_abs_euclidean_distance(vec_1, vec_2):
     return np.absolute(euclidean(vec_1, vec_2))
@@ -88,12 +93,20 @@ class Pipeline:
     # LOAD STAGE 2
     def ingest_bboxes(self):
         bbox_df = pd.read_csv(self.bbox_path, delimiter=' ', header=None)
-        bbox_df.columns = ['frame_number', 'x_min', 'y_min', 'x_max', 'y_max', 'confidence_score']
+        bbox_df.columns = [
+            'frame_number',
+            'x_min',
+            'y_min',
+            'x_max',
+            'y_max',
+            'confidence_score']
         return bbox_df
 
     # LOAD STAGE 3
     def ingest_products_on_shelf_plane_coords(self):
-        return np.loadtxt(self.products_on_shelf_plane_coords_path, delimiter=' ')
+        return np.loadtxt(
+            self.products_on_shelf_plane_coords_path,
+            delimiter=' ')
 
     # LOAD STAGE 4
     def ingest_shelf_plane_norm(self):
@@ -103,8 +116,13 @@ class Pipeline:
     def ingest_dist_estimate(self):
         return np.loadtxt(self.dist_estimate_path)
 
-    def compute_distance_scores_for_products(self, gaze_df, bbox_df, product_plane_coords,
-                                             plane_n_vector, shelf_dist_estimate):
+    def compute_distance_scores_for_products(
+            self,
+            gaze_df,
+            bbox_df,
+            product_plane_coords,
+            plane_n_vector,
+            shelf_dist_estimate):
         # TODO: Choose mean of calibration
         calibration_gaze_origin = np.array([616.0491945, 126.5688365, 0])
 
@@ -118,12 +136,15 @@ class Pipeline:
         for idx in gaze_df.index:
             gaze_x_angle = gaze_df.iloc[idx]['x_angle']
             gaze_y_angle = gaze_df.iloc[idx]['y_angle']
-            z_vector = convert_from_euler_angle_to_vector(gaze_x_angle, gaze_y_angle)
+            z_vector = convert_from_euler_angle_to_vector(
+                gaze_x_angle, gaze_y_angle)
 
             if USE_BBOX:
-                bbox_coords = bbox_df.iloc[idx][['x_min', 'y_min', 'x_max', 'y_max']].values
+                bbox_coords = bbox_df.iloc[idx][[
+                    'x_min', 'y_min', 'x_max', 'y_max']].values
                 bbox_center = calculate_rectangle_centroid(*bbox_coords)
-                unnormalized_gaze_origin = np.array([bbox_center[0], bbox_center[1], 0])
+                unnormalized_gaze_origin = np.array(
+                    [bbox_center[0], bbox_center[1], 0])
                 gaze_origin = unnormalized_gaze_origin - calibration_gaze_origin
             else:
                 gaze_origin = np.zeros(3)
@@ -133,15 +154,25 @@ class Pipeline:
                 Ray(origin=gaze_origin, direction=z_vector),
                 shelf_dist_estimate)
 
-            # 2. calculate for each product the distance between the product's vector and POI on plane
+            # 2. calculate for each product the distance between the product's
+            # vector and POI on plane
             for i in range(len(product_plane_coords)):
-                gaze_df.at[idx, 'product {}'.format(i)] = get_abs_euclidean_distance(-poi, product_plane_coords[i])
+                gaze_df.at[idx, 'product {}'.format(
+                    i)] = get_abs_euclidean_distance(-poi, product_plane_coords[i])
 
         # 3. make regular and smoothed predictions based on product distances
-        product_cols = ['product 0', 'product 1', 'product 2', 'product 3', 'product 4', 'product 5', 'product 6']
-        distances = gaze_df[product_cols].values # num_frames x num_products
-        gaze_df['predictions'] = np.argmin(distances, axis=1) # num_frames
-        gaze_df['smoothed_predictions'] = medfilt(gaze_df['predictions'], kernel_size=89)
+        product_cols = [
+            'product 0',
+            'product 1',
+            'product 2',
+            'product 3',
+            'product 4',
+            'product 5',
+            'product 6']
+        distances = gaze_df[product_cols].values  # num_frames x num_products
+        gaze_df['predictions'] = np.argmin(distances, axis=1)  # num_frames
+        gaze_df['smoothed_predictions'] = medfilt(
+            gaze_df['predictions'], kernel_size=89)
 
         return gaze_df
 
@@ -158,9 +189,8 @@ class Pipeline:
         shelf_plane_norm = self.ingest_shelf_plane_norm()
         dist_estimate = self.ingest_dist_estimate()
 
-        new_gaze_df = self.compute_distance_scores_for_products(gaze_df, bbox_df,
-                                                                product_plane_coords,
-                                                                shelf_plane_norm, dist_estimate)
+        new_gaze_df = self.compute_distance_scores_for_products(
+            gaze_df, bbox_df, product_plane_coords, shelf_plane_norm, dist_estimate)
 
         if self.write_results_per_frame(new_gaze_df):
             print("DONE: {} frames".format(new_gaze_df.shape[0]))
@@ -185,7 +215,8 @@ if __name__ == "__main__":
     DIST_ESTIMATE_PATH = "notebooks/visualization/notebook_data/dist_estimate.txt"
 
     filename = "output_with_bbox.txt" if USE_BBOX else "output_without_bbx.txt"
-    OUTPUT_PATH = os.path.join("notebooks/visualization/notebook_data/", filename)
+    OUTPUT_PATH = os.path.join(
+        "notebooks/visualization/notebook_data/", filename)
 
     pipeline = Pipeline(
         inputs={
@@ -193,9 +224,7 @@ if __name__ == "__main__":
             'bbox_path': BBOX_PATH,
             'products_on_shelf_plane_coords_path': PRODUCTS_ON_SHELF_PLANE_COORDS_PATH,
             'shelf_plane_norm_path': SHELF_PLANE_NORM_PATH,
-            'dist_estimate_path': DIST_ESTIMATE_PATH
-        },
-        output_path=OUTPUT_PATH
-    )
+            'dist_estimate_path': DIST_ESTIMATE_PATH},
+        output_path=OUTPUT_PATH)
 
     pipeline.run()
