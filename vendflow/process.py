@@ -75,8 +75,8 @@ def get_abs_euclidean_distance(vec_1, vec_2):
 class Pipeline:
     def __init__(self, inputs, output_path):
         # INPUTS
+        self.num_products = inputs['num_products']
         self.raw_gaze_path = inputs['raw_gaze_path']
-        self.bbox_path = inputs['bbox_path']
         self.products_on_shelf_plane_coords_path = inputs['products_on_shelf_plane_coords_path']
         self.shelf_plane_norm_path = inputs['shelf_plane_norm_path']
         self.dist_estimate_path = inputs['dist_estimate_path']
@@ -89,18 +89,6 @@ class Pipeline:
         gaze_df = pd.read_csv(self.raw_gaze_path, delimiter=' ', header=None)
         gaze_df.columns = ['frame_number', 'x_angle', 'y_angle', 'z_angle']
         return gaze_df
-
-    # LOAD STAGE 2
-    def ingest_bboxes(self):
-        bbox_df = pd.read_csv(self.bbox_path, delimiter=' ', header=None)
-        bbox_df.columns = [
-            'frame_number',
-            'x_min',
-            'y_min',
-            'x_max',
-            'y_max',
-            'confidence_score']
-        return bbox_df
 
     # LOAD STAGE 3
     def ingest_products_on_shelf_plane_coords(self):
@@ -118,19 +106,18 @@ class Pipeline:
 
     def compute_distance_scores_for_products(
             self,
+            num_products,
             gaze_df,
-            bbox_df,
             product_plane_coords,
             plane_n_vector,
             shelf_dist_estimate):
+
         # TODO: Choose mean of calibration
-        calibration_gaze_origin = np.array([616.0491945, 126.5688365, 0])
+        # calibration_gaze_origin = np.array([616.0491945, 126.5688365, 0])
 
         for i in range(len(product_plane_coords)):
+            print(i)
             gaze_df['product {}'.format(i)] = None
-
-        assert set(gaze_df.index) == set(bbox_df.index), \
-            'Gaze and bounding box data should cover the same frames'
 
         # 1. for each gaze vector, get the point of intersection on the plane
         for idx in gaze_df.index:
@@ -138,16 +125,8 @@ class Pipeline:
             gaze_y_angle = gaze_df.iloc[idx]['y_angle']
             z_vector = convert_from_euler_angle_to_vector(
                 gaze_x_angle, gaze_y_angle)
-
-            if USE_BBOX:
-                bbox_coords = bbox_df.iloc[idx][[
-                    'x_min', 'y_min', 'x_max', 'y_max']].values
-                bbox_center = calculate_rectangle_centroid(*bbox_coords)
-                unnormalized_gaze_origin = np.array(
-                    [bbox_center[0], bbox_center[1], 0])
-                gaze_origin = unnormalized_gaze_origin - calibration_gaze_origin
-            else:
-                gaze_origin = np.zeros(3)
+            
+            gaze_origin = np.zeros(3)
 
             poi = calculate_poi(
                 plane_n_vector,
@@ -161,14 +140,7 @@ class Pipeline:
                     i)] = get_abs_euclidean_distance(-poi, product_plane_coords[i])
 
         # 3. make regular and smoothed predictions based on product distances
-        product_cols = [
-            'product 0',
-            'product 1',
-            'product 2',
-            'product 3',
-            'product 4',
-            'product 5',
-            'product 6']
+        product_cols = ['product {}'.format(i) for i in range(num_products)]
         distances = gaze_df[product_cols].values  # num_frames x num_products
         gaze_df['predictions'] = np.argmin(distances, axis=1)  # num_frames
         gaze_df['smoothed_predictions'] = medfilt(
@@ -182,46 +154,50 @@ class Pipeline:
         return True
 
     def run(self):
-        num_frames = 12000
-        gaze_df = self.ingest_raw_gaze()[:num_frames]
-        bbox_df = self.ingest_bboxes()[:num_frames]
+        # the assumption here being that the raw video for calibration is 
+        # in clean state (no extra frames)
+
+        gaze_df = self.ingest_raw_gaze()
         product_plane_coords = self.ingest_products_on_shelf_plane_coords()
         shelf_plane_norm = self.ingest_shelf_plane_norm()
         dist_estimate = self.ingest_dist_estimate()
 
         new_gaze_df = self.compute_distance_scores_for_products(
-            gaze_df, bbox_df, product_plane_coords, shelf_plane_norm, dist_estimate)
+            self.num_products, gaze_df, product_plane_coords, shelf_plane_norm, dist_estimate)
 
         if self.write_results_per_frame(new_gaze_df):
             print("DONE: {} frames".format(new_gaze_df.shape[0]))
 
 
 if __name__ == "__main__":
-    RAW_GAZE_PATH = "notebooks/visualization/notebook_data/frame_to_gaze.txt"
+
+    NUM_PRODUCTS = 11
+
+    RAW_GAZE_PATH = "notebooks/data_for_demo_v2/vendgaze/output-test.txt"
 
     # not used
-    BBOX_PATH = "notebooks/visualization/notebook_data/frame_to_bbox.txt"
+    BBOX_PATH = "notebooks/data_for_demo_v2/vendnet/video-det-fold-None.txt"
 
     # the coordinates of products on shelf
-    PRODUCTS_ON_SHELF_PLANE_COORDS_PATH = "notebooks/visualization/notebook_data/product_plane_coords.txt"
+    PRODUCTS_ON_SHELF_PLANE_COORDS_PATH = "notebooks/data_for_demo_v2/product_plane_coords.txt"
 
     # norm of the shelf plane
-    SHELF_PLANE_NORM_PATH = "notebooks/visualization/notebook_data/shelf_plane_norm.txt"
+    SHELF_PLANE_NORM_PATH = "notebooks/data_for_demo_v2/shelf_plane_norm.txt"
 
     # the gaze vectors for the products (not used)
-    PRODUCT_GAZE_VECTORS_PATH = "notebooks/visualization/notebook_data/product_vectors.txt"
+    PRODUCT_GAZE_VECTORS_PATH = "notebooks/data_for_demo_v2/product_vectors.txt"
 
     # the set distance of calibrated face from shelf
-    DIST_ESTIMATE_PATH = "notebooks/visualization/notebook_data/dist_estimate.txt"
+    DIST_ESTIMATE_PATH = "notebooks/data_for_demo_v2/dist_estimate.txt"
 
     filename = "output_with_bbox.txt" if USE_BBOX else "output_without_bbx.txt"
     OUTPUT_PATH = os.path.join(
-        "notebooks/visualization/notebook_data/", filename)
+        "notebooks/data_for_demo_v2/", filename)
 
     pipeline = Pipeline(
         inputs={
             'raw_gaze_path': RAW_GAZE_PATH,
-            'bbox_path': BBOX_PATH,
+            'num_products': NUM_PRODUCTS,
             'products_on_shelf_plane_coords_path': PRODUCTS_ON_SHELF_PLANE_COORDS_PATH,
             'shelf_plane_norm_path': SHELF_PLANE_NORM_PATH,
             'dist_estimate_path': DIST_ESTIMATE_PATH},
