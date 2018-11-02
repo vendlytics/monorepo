@@ -6,8 +6,8 @@ import argparse, time
 from utils.net_utils import adjust_learning_rate
 import torch
 from torch.autograd import Variable
-# from dataset.dataloader import DepthDataset
-from dataset.nyuv2_dataset import NYUv2Dataset
+# from scripts.dataloader import DepthDataset
+from scripts.nyuv2_dataset import NYUv2Dataset
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import transforms
@@ -123,7 +123,7 @@ def parse_args():
                       default='nyuv2', type=str)
     parser.add_argument('--epochs', dest='max_epochs',
                       help='number of epochs to train',
-                      default=NUM_EPOCHS, type=int)
+                      default=40, type=int)
     parser.add_argument('--cuda', dest='cuda',
                       help='whether use CUDA',
                       action='store_true')

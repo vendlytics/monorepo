@@ -175,6 +175,7 @@ if __name__ == '__main__':
             break
         cv2_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
+        no_dets_for_cur_frame = True
         while True:
             x_min, y_min, x_max, y_max, conf = int(
                 float(
@@ -188,6 +189,8 @@ if __name__ == '__main__':
                 line[5])
 
             if conf >= 0.9995:
+                no_dets_for_cur_frame = False
+
                 bbox_width = abs(x_max - x_min)
                 bbox_height = abs(y_max - y_min)
                 # x_min -= 3 * bbox_width / 4
@@ -227,12 +230,15 @@ if __name__ == '__main__':
                     pitch_predicted.data[0] * idx_tensor) * 3 - 99
                 roll_predicted = torch.sum(
                     roll_predicted.data[0] * idx_tensor) * 3 - 99
+                
+                x_center = (x_min + x_max) / 2
+                y_center = (y_min + y_max) / 2
 
                 # Print new frame with cube and axis
                 txt_out.write(
-                    str(frame_num) + ' %f %f %f\n' %
-                    (yaw_predicted, pitch_predicted, roll_predicted))
-                # utils.plot_pose_cube(frame, yaw_predicted, pitch_predicted, roll_predicted, (x_min + x_max) / 2, (y_min + y_max) / 2, size = bbox_width)
+                    str(frame_num) + ' %f %f %f %f %f\n' %
+                    (yaw_predicted, pitch_predicted, roll_predicted, x_center, y_center))
+                # utils.plot_pose_cube(frame, yaw_predicted, pitch_predicted, roll_predicted, x_center, y_center, size = bbox_width)
                 utils.draw_axis(
                     frame,
                     yaw_predicted,
@@ -250,6 +256,11 @@ if __name__ == '__main__':
             # Peek next frame detection
             next_frame_num = int(
                 bbox_line_list[idx + 1].strip('\n').split(SEPARATOR)[0])
+            
+            if next_frame_num > frame_num and no_dets_for_cur_frame:
+                print("no dets for frame:")
+                txt_out.write(str(frame_num) + ' NaN NaN NaN NaN NaN\n')
+
             # print 'next_frame_num ', next_frame_num
             if next_frame_num == det_frame_num:
                 idx += 1

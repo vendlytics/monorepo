@@ -1,7 +1,8 @@
 models/
 videos/
 output/
-data*
+data/*
+data_for_demo*
 *.pyc
 *.swp
 .ipynb_checkpoints/
