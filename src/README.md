@@ -8,9 +8,28 @@
 
 ## Getting Started
 
+### Start virtualenv
+
+```shell
+```
+
+### Install requirements
+
+```shell
+pip install requirements.txt
+```
+
 ### Download models
 
+```shell
+# git lfs download specific models
+```
 
+### Download sample data
+
+```shell
+# git lfs download specific sample data
+```
 
 ### Get bounding boxes of faces
 
