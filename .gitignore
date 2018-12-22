@@ -1,6 +1,4 @@
-models/
 videos/
-output/
 data/*
 data_for_demo*
 *.pyc
