@@ -1,3 +1,0 @@
-# vendstats
-
-Placeholder
