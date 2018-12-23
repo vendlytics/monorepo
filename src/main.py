@@ -1,7 +1,15 @@
-import argparse
 from read_bag import read_bag
 from face_detect import face_detect
+from gazenet.gazenet import Gazenet
+
+import argparse
 import scipy.misc
+import matplotlib
+try:
+    import tkinter
+    matplotlib.use('TkAgg')
+except ImportError:
+    matplotlib.use('WebAgg')
 import matplotlib.pyplot as plt
 
 
@@ -15,13 +23,12 @@ parser.add_argument(
 parser.add_argument(
     "-d",
     "--debug",
-    type=str,
-    default=False,
+    type=int,
+    default=0,
     help="Enable debug mode")
 args = parser.parse_args()
 
-GAZENET_PATH = '../models/gaze/hopenet_robust_alpha1.pkl'
-
+GAZENET_PATH = '../models/gazenet/hopenet_robust_alpha1.pkl'
 
 def crop(face, color, depth):
     assert color.shape[:2] == depth.shape, 'color shape: {} depth shape: {}'.format(color.shape, depth.shape)
@@ -41,6 +48,8 @@ def show_images(images):
         plt.imshow(image)
     plt.show()
 
+gazenet = Gazenet(GAZENET_PATH)
+
 num_face_not_detected = 0
 for i, (color, depth) in enumerate(read_bag(args.filepath)):
     face = face_detect(color)
@@ -50,6 +59,7 @@ for i, (color, depth) in enumerate(read_bag(args.filepath)):
     color_crop, depth_crop = crop(face, color, depth)
     if args.debug:
         show_images([color, color_crop, depth, depth_crop])
+    angles = gazenet.image_to_euler_angles(color, (face[0], face[1], face[0] + face[2], face[1] + face[3]))
 
 print('Total frames:', i + 1)
 print('Frames without face detection:', num_face_not_detected)

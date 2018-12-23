@@ -5,8 +5,9 @@ import torch.nn.functional as F
 import torchvision
 from torchvision import transforms
 from PIL import Image
+import numpy as np
 
-import vendgaze
+from . import vendgaze
 
 
 class Gazenet:
@@ -15,9 +16,13 @@ class Gazenet:
         self.model = Gazenet._load_model(model_path)
         self.idx_tensor = torch.FloatTensor([idx for idx in range(66)])
 
-    def image_to_euler_angles(self, image, bboxes):
-        # image: width x height x 3
-        image = self._preprocess(image, bboxes)
+    def image_to_euler_angles(self, image, bbox):
+        """
+        image: width x height x 3
+        bbox: (x_min, x_max, y_min, y_max)
+        returns np.array of the 3 angles
+        """
+        image = self._preprocess(image, bbox)
         image = self._transform(image)
         
         image_shape = image.size()
@@ -31,11 +36,11 @@ class Gazenet:
 
         return self._map_angles_to_continuous(yaw_pred, pitch_pred, roll_pred)
     
-    def _preprocess(self, image, bboxes):
-        x_min = max(bboxes[0] - 50, 0)
-        y_min = max(bboxes[1] - 50, 0)
-        x_max = min(image.shape[0], bboxes[2] + 50)
-        y_max = min(image.shape[1], bboxes[3] + 50)
+    def _preprocess(self, image, bbox):
+        x_min = max(bbox[0] - 50, 0)
+        y_min = max(bbox[1] - 50, 0)
+        x_max = min(image.shape[0], bbox[2] + 50)
+        y_max = min(image.shape[1], bbox[3] + 50)
         
         image = image[x_min:x_max, y_min:y_max]
         image = Image.fromarray(image)
@@ -58,10 +63,9 @@ class Gazenet:
         return transformations(image)
 
     def _map_angles_to_continuous(self, yaw, pitch, roll):
-        return map(
-            lambda x: torch.sum(x[0] * self.idx_tensor) * 3 - 99, 
-            [yaw, pitch, roll]
-            )
+        def postproc(angle):
+            return (torch.sum(angle[0] * self.idx_tensor) * 3 - 99).data.numpy()
+        return np.array([postproc(yaw), postproc(pitch), postproc(roll)])
 
     @staticmethod
     def _load_model(model_path):
