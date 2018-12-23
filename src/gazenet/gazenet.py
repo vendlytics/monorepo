@@ -17,16 +17,12 @@ class Gazenet:
 
     def image_to_euler_angles(self, image, bboxes):
         # image: width x height x 3
-        x_min = max(bboxes[0] - 50, 0)
-        x_max = min(image.shape[1], bboxes[1] + 50)
-        y_min = max(bboxes[2] - 50, 0)
-        y_max = min(image.shape[0], bboxes[3] + 50)
-
-        image = self._transform(Image.fromarray(image))
-        image_shape = image.size()
+        image = self._preprocess(image, bboxes)
+        image = self._transform(image)
         
+        image_shape = image.size()
         image = image.view(1, image_shape[0], image_shape[1], image_shape[2])
-
+        
         yaw, pitch, roll = self.model(Variable(image))
 
         yaw_pred = F.softmax(yaw)
@@ -34,15 +30,17 @@ class Gazenet:
         roll_pred = F.softmax(roll)
 
         return self._map_angles_to_continuous(yaw_pred, pitch_pred, roll_pred)
-
-    def batch_images_to_euler_angles(self, image, batch_of_bboxes):
-        raise NotImplementedError
-
-    def _map_angles_to_continuous(self, yaw, pitch, roll):
-        return map(
-            lambda x: torch.sum(x[0] * self.idx_tensor) * 3 - 99, 
-            [yaw, pitch, roll]
-            )
+    
+    def _preprocess(self, image, bboxes):
+        x_min = max(bboxes[0] - 50, 0)
+        y_min = max(bboxes[1] - 50, 0)
+        x_max = min(image.shape[0], bboxes[2] + 50)
+        y_max = min(image.shape[1], bboxes[3] + 50)
+        
+        image = image[x_min:x_max, y_min:y_max]
+        image = Image.fromarray(image)
+        
+        return image
 
     def _transform(self, image):
         transformations = transforms.Compose(
@@ -58,6 +56,12 @@ class Gazenet:
         )
 
         return transformations(image)
+
+    def _map_angles_to_continuous(self, yaw, pitch, roll):
+        return map(
+            lambda x: torch.sum(x[0] * self.idx_tensor) * 3 - 99, 
+            [yaw, pitch, roll]
+            )
 
     @staticmethod
     def _load_model(model_path):
