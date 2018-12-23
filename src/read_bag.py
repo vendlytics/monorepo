@@ -17,11 +17,17 @@ def read_bag(filepath):
         color_frame, depth_frame = frames.get_color_frame(), frames.get_depth_frame()
         yield np.array(color_frame.get_data()), np.array(depth_frame.get_data())
 
+
 if __name__ == '__main__':
     import argparse
     import scipy.misc
     parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--filepath", type=str, required=True, help="Path to the bag file")
+    parser.add_argument(
+        "-f",
+        "--filepath",
+        type=str,
+        required=True,
+        help="Path to the bag file")
     args = parser.parse_args()
     i = 0
     for color, depth in read_bag(args.filepath):
