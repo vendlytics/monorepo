@@ -9,11 +9,13 @@ def read_bag(filepath):
     rs.config.enable_device_from_file(config, filepath, repeat_playback=False)
     config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 30)
     config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
+    align = rs.align(rs.stream.color)
     pipeline.start(config)
     while True:
         success, frames = pipeline.try_wait_for_frames()
         if not success:
             return
+        frames = align.process(frames)
         color_frame, depth_frame = frames.get_color_frame(), frames.get_depth_frame()
         yield np.array(color_frame.get_data()), np.array(depth_frame.get_data())
 
