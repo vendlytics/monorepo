@@ -75,7 +75,13 @@ class Pipeline:
     # LOAD STAGE 1
     def ingest_raw_gaze(self):
         gaze_df = pd.read_csv(self.raw_gaze_path, delimiter=' ', header=None)
-        gaze_df.columns = ['frame_number', 'x_angle', 'y_angle', 'z_angle', 'x_center', 'y_center']
+        gaze_df.columns = [
+            'frame_number',
+            'x_angle',
+            'y_angle',
+            'z_angle',
+            'x_center',
+            'y_center']
         return gaze_df
 
     # LOAD STAGE 3
@@ -119,9 +125,9 @@ class Pipeline:
             gaze_y_angle = gaze_df.iloc[idx]['y_angle']
             z_vector = convert_from_euler_angle_to_vector(
                 gaze_x_angle, gaze_y_angle)
-            
+
             gaze_origin = np.array(
-                    [gaze_df.iloc[idx]['x_center'], gaze_df.iloc[idx]['y_center'], 0])
+                [gaze_df.iloc[idx]['x_center'], gaze_df.iloc[idx]['y_center'], 0])
             # gaze_origin = np.zeros(3)
 
             poi = calculate_poi(
@@ -135,8 +141,11 @@ class Pipeline:
                 gaze_df.at[idx, 'product {}'.format(
                     i)] = get_abs_euclidean_distance(poi, product_plane_coords[i])
 
-            product_cols = ['product {}'.format(i) for i in range(len(product_plane_coords))]
-            gaze_df.at[idx, 'predictions'] = np.argmin(gaze_df.iloc[idx][product_cols])[0]
+            product_cols = [
+                'product {}'.format(i) for i in range(
+                    len(product_plane_coords))]
+            gaze_df.at[idx, 'predictions'] = np.argmin(
+                gaze_df.iloc[idx][product_cols])[0]
 
         # 3. make regular and smoothed predictions based on product distances
         gaze_df['smooth_predictions'] = medfilt(
@@ -161,8 +170,8 @@ class Pipeline:
         new_gaze_df = self.compute_distance_scores_for_products(
             gaze_df, product_plane_coords, shelf_plane_norm, dist_estimate)
 
-        if self.write_results_per_frame(new_gaze_df) and \
-            self.write_smooth_predictions(new_gaze_df['smooth_predictions'].values):
+        if self.write_results_per_frame(new_gaze_df) and self.write_smooth_predictions(
+                new_gaze_df['smooth_predictions'].values):
             print("DONE: {} frames".format(new_gaze_df.shape[0]))
 
 
@@ -184,11 +193,9 @@ if __name__ == "__main__":
             'raw_gaze_path': RAW_GAZE_PATH,
             'products_on_shelf_plane_coords_path': PRODUCTS_ON_SHELF_PLANE_COORDS_PATH,
             'shelf_plane_norm_path': SHELF_PLANE_NORM_PATH,
-            'dist_estimate_path': DIST_ESTIMATE_PATH
-        },
+            'dist_estimate_path': DIST_ESTIMATE_PATH},
         outputs={
             'raw_output_path': RAW_OUTPUT_PATH,
-            'smooth_predictions_path': SMOOTH_PREDICTIONS_PATH
-        })
+            'smooth_predictions_path': SMOOTH_PREDICTIONS_PATH})
 
     pipeline.run()

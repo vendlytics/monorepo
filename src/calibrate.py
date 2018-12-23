@@ -6,4 +6,4 @@
 
 # outputs:
 # - shelf plane norm
-# - product 
+# - product

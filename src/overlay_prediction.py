@@ -40,7 +40,7 @@ def pred_to_text_clip(pred):
     if not np.isnan(pred):
         text = idx_to_name[int(pred)]
 
-    return TextClip(text, fontsize=50, bg_color='white', 
+    return TextClip(text, fontsize=50, bg_color='white',
                     color='black', stroke_width=3).set_duration(1 / fps)
 
 
