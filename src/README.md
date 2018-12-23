@@ -8,6 +8,8 @@
 
 ## Getting Started
 
+Ensure that you have GCC version 6.
+
 ### Start virtualenv
 
 ```shell
@@ -16,7 +18,7 @@
 ### Install requirements
 
 ```shell
-pip install requirements.txt
+pip install -r requirements.txt
 ```
 
 ### Download models
