@@ -6,7 +6,7 @@ pandas
 scipy
 
 # for streaming
-kafka-python=1.4.3
+kafka-python==1.4.3
 
 # for gaze
 http://download.pytorch.org/whl/cu91/torch-0.4.0-cp27-cp27mu-linux_x86_64.whl

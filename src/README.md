@@ -8,6 +8,8 @@
 
 ## Getting Started
 
+Ensure that you have GCC version 6.
+
 ### Start virtualenv
 
 ```shell
@@ -16,7 +18,7 @@
 ### Install requirements
 
 ```shell
-pip install requirements.txt
+pip install -r requirements.txt
 ```
 
 ### Download models
@@ -46,3 +48,7 @@ python vendnet/demo.py --video_path <video_path> --cuda --dataset wider_face --l
 ```sh
 python gaze/code/test_on_video_dockerface.py --snapshot PATH_OF_SNAPSHOT --video PATH_OF_VIDEO --bboxes FACE_BOUNDING_BOX_ANNOTATIONS --output_string STRING_TO_APPEND_TO_OUTPUT --fps 23.98
 ```
+
+## Intel Realsense
+
+TODO
