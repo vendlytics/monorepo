@@ -4,15 +4,19 @@ import numpy as np
 
 # yields (color np.array, depth np.array)
 def read_bag(filepath):
+    # create context
     pipeline = rs.pipeline()
     config = rs.config()
+
     rs.config.enable_device_from_file(config, filepath, repeat_playback=False)
     config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 0)
     config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 0)
+
     align = rs.align(rs.stream.color)
     pipeline_profile = pipeline.start(config)
 
-    # If we don't set this, reading the frames takes as long as the recording duration
+    # If we don't set this, reading the frames takes as long as the recording
+    # duration
     device = pipeline_profile.get_device()
     device.as_playback().set_real_time(False)
 

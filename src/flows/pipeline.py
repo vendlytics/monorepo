@@ -7,23 +7,33 @@ from stages.gaze import ExtractGaze
 from stages.attention import WriteAttention
 
 
-
 def parse_args():
-    parser = argparse.ArgumentParser(description='Pipeline for end-to-end processing of video')
+    parser = argparse.ArgumentParser(
+        description='Pipeline for end-to-end processing of video')
     parser.add_argument('--video_path', dest='video_path', type=str)
-    parser.add_argument('--vendnet_model_path', dest='vendnet_model_path', type=str)
+    parser.add_argument(
+        '--vendnet_model_path',
+        dest='vendnet_model_path',
+        type=str)
     parser.add_argument('--gaze_model_path', dest='gaze_model_path', type=str)
-    parser.add_argument('--calibration_json_path', dest='calibration_json_path', type=str)
-    parser.add_argument('--output_dir', dest='output_path', default='data/jobs', type=str)
+    parser.add_argument(
+        '--calibration_json_path',
+        dest='calibration_json_path',
+        type=str)
+    parser.add_argument(
+        '--output_dir',
+        dest='output_path',
+        default='data/jobs',
+        type=str)
 
     args = parser.parse_args()
     return args
 
 
 def job_id(camera_id='0'):
-    """Job ID based on Unix timestamp of when job was run and source camera ID. 
+    """Job ID based on Unix timestamp of when job was run and source camera ID.
     """
-    timestamp_ms = lambda: int(round(time.time() * 1000))
+    def timestamp_ms(): return int(round(time.time() * 1000))
     return '_'.join([str(timestamp_ms), str(camera_id)])
 
 
@@ -43,8 +53,8 @@ if __name__ == "__main__":
     cur_job_id = job_id('0')
 
     pipeline = [
-        ExtractFaces(cur_job_id, args.video_path, args.vendnet_model_path), 
-        ExtractGaze(cur_job_id, args.gaze_model_path), 
+        ExtractFaces(cur_job_id, args.video_path, args.vendnet_model_path),
+        ExtractGaze(cur_job_id, args.gaze_model_path),
         WriteAttention(cur_job_id, args.calibration_json)
     ]
 

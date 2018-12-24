@@ -9,6 +9,7 @@ import torch
 from model.nms.nms_wrapper import nms
 from model.faster_rcnn import resnet
 
+
 class ExtractFaces:
 
     def __init__(self, job_id, video_path, model_path):
@@ -18,19 +19,20 @@ class ExtractFaces:
 
     def run(self):
         targets = np.asarray(['__background__', 'face'])
-        
+
         faster_rcnn = resnet(
-            classes=targets, num_layers=101, pretrained=False, class_agnostic=None
-        )
+            classes=targets,
+            num_layers=101,
+            pretrained=False,
+            class_agnostic=None)
 
         faster_rcnn._init_modules()
         faster_rcnn._init_weights()
-        
+
         checkpoint = torch.load(self.model_path)
         faster_rcnn.load_state_dict(checkpoint['model'])
-        
+
         # run for every frame
-        
 
         # write outputs to deterministic job ID'd path
 

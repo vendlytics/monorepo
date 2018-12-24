@@ -29,15 +29,20 @@ class wider_face(imdb):
         imdb.__init__(self, name)
         self._devkit_path = self._get_default_path()  # ./data/WIDER2015
         # ./data/WIDER2015/WIDER_train/images
-        self._data_path = os.path.join(self._devkit_path, 'WIDER_' + image_set, 'images')
+        self._data_path = os.path.join(
+            self._devkit_path, 'WIDER_' + image_set, 'images')
         # Example path to image set file:
-        image_set_file = os.path.join(self._devkit_path, 'wider_face_split', 'wider_face_' + image_set + '.mat')
+        image_set_file = os.path.join(
+            self._devkit_path,
+            'wider_face_split',
+            'wider_face_' + image_set + '.mat')
         assert os.path.exists(image_set_file), \
             'Path does not exist: {}'.format(image_set_file)
         self._wider_image_set = sio.loadmat(image_set_file, squeeze_me=True)
         self._classes = ('__background__',  # always index 0
                          'face')
-        self._class_to_ind = dict(list(zip(self.classes, list(range(self.num_classes)))))
+        self._class_to_ind = dict(
+            list(zip(self.classes, list(range(self.num_classes)))))
         self._image_ext = '.jpg'
         self._image_index, self._face_bbx = self._load_image_set_index()
         # Default to roidb handler
@@ -89,7 +94,8 @@ class wider_face(imdb):
         face_bbx = []
         for i in range(len(event_list)):
             for j in range(len(file_list[i])):
-                image_index.append(str(event_list[i]) + '/' + str(file_list[i][j]))
+                image_index.append(
+                    str(event_list[i]) + '/' + str(file_list[i][j]))
                 face_bbx.append(face_bbx_list[i][j].reshape(-1, 4))
         # _wider_image_set = np.concatenate(_wider_image_set['file_list']).ravel().tolist()
         # image_index = map(str, _wider_image_set)
@@ -112,7 +118,7 @@ class wider_face(imdb):
             with open(cache_file, 'rb') as fid:
                 try:
                     roidb = pickle.load(fid)
-                except:
+                except BaseException:
                     roidb = pickle.load(fid, encoding='bytes')
             print('{} gt roidb loaded from {}'.format(self.name, cache_file))
             return roidb

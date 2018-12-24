@@ -24,10 +24,10 @@ class Gazenet:
         """
         image = self._preprocess(image, bbox)
         image = self._transform(image)
-        
+
         image_shape = image.size()
         image = image.view(1, image_shape[0], image_shape[1], image_shape[2])
-        
+
         yaw, pitch, roll = self.model(Variable(image))
 
         yaw_pred = F.softmax(yaw)
@@ -35,16 +35,16 @@ class Gazenet:
         roll_pred = F.softmax(roll)
 
         return self._map_angles_to_continuous(yaw_pred, pitch_pred, roll_pred)
-    
+
     def _preprocess(self, image, bbox):
         x_min = max(bbox[0] - 50, 0)
         y_min = max(bbox[1] - 50, 0)
         x_max = min(image.shape[0], bbox[2] + 50)
         y_max = min(image.shape[1], bbox[3] + 50)
-        
+
         image = image[x_min:x_max, y_min:y_max]
         image = Image.fromarray(image)
-        
+
         return image
 
     def _transform(self, image):
@@ -64,13 +64,18 @@ class Gazenet:
 
     def _map_angles_to_continuous(self, yaw, pitch, roll):
         def postproc(angle):
-            return (torch.sum(angle[0] * self.idx_tensor) * 3 - 99).data.numpy()
+            return (
+                torch.sum(
+                    angle[0] *
+                    self.idx_tensor) *
+                3 -
+                99).data.numpy()
         return np.array([postproc(yaw), postproc(pitch), postproc(roll)])
 
     @staticmethod
     def _load_model(model_path):
         model = vendgaze.GazeNet(
-            block=torchvision.models.resnet.Bottleneck, 
+            block=torchvision.models.resnet.Bottleneck,
             layers=[3, 4, 6, 3],
             num_bins=66
         )
