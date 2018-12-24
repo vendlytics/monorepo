@@ -8,3 +8,6 @@ data_for_demo*
 logs/
 
 src/*.so
+
+# notebook outputs
+notebooks/output/*

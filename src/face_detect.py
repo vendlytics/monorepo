@@ -5,14 +5,14 @@ CASCADE_FILEPATH = '../models/cascade/haarcascade_frontalface_default.xml'
 
 def face_crop(image):
     """Returns a cropped face
-    
+
     Arguments:
         image {numpy.array} -- image where face may exist
-    
+
     Returns:
         numpy.array, None -- image with face, else None
     """
-    
+
     face = face_detect(image)
     if face is None:
         return None
@@ -21,11 +21,11 @@ def face_crop(image):
 
 
 def face_detect(image):
-    """Returns face positions (x, y, w, h)
-    
+    """Returns face positions (min_x, min_y, max_x, max_y)
+
     Arguments:
         image {numpy.array} -- image where face may exist
-    
+
     Returns:
         numpy.array, None -- position of face, if it exists
     """
@@ -38,9 +38,13 @@ def face_detect(image):
         scaleFactor=1.1,
         minNeighbors=5,
         minSize=(30, 30))
-    if len(faces) == 0:
+    
+    num_faces = len(faces)
+    if num_faces == 0:
         return None
-    return get_largest_face(faces)
+
+    x, y, w, h = get_largest_face(faces)
+    return [x, y, x + w, y + h]
 
 
 def get_largest_face(faces):

@@ -1,6 +1,6 @@
 from read_bag import read_bag
 from face_detect import face_detect
-from gazenet.gazenet import Gazenet
+from gazenet import Gazenet
 
 import argparse
 import scipy.misc
