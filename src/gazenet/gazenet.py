@@ -19,7 +19,7 @@ class Gazenet:
     def image_to_euler_angles(self, image, bbox):
         """
         image: width x height x 3
-        bbox: (x_min, x_max, y_min, y_max)
+        bbox: (x_min, y_min, x_max, y_max)
         returns np.array of the 3 angles
         """
         image = self._preprocess(image, bbox)

@@ -1,15 +1,21 @@
 # default
+pipenv
+
 matplotlib
 tensorflow
 numpy
 pandas
 scipy
+opencv-python
+
+# for main
+tornado
 
 # for streaming
 kafka-python==1.4.3
 
 # for gaze
-http://download.pytorch.org/whl/cu91/torch-0.4.0-cp27-cp27mu-linux_x86_64.whl
+https://download.pytorch.org/whl/cu100/torch-1.0.0-cp36-cp36m-linux_x86_64.whl
 torchvision
 
 # for notebooks

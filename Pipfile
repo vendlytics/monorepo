@@ -1,0 +1,28 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+
+[packages]
+matplotlib = "*"
+tensorflow = "*"
+numpy = "*"
+pandas = "*"
+scipy = "*"
+kafka-python = "==1.4.3"
+torch = {file = "https://download.pytorch.org/whl/cu100/torch-1.0.0-cp36-cp36m-linux_x86_64.whl"}
+torchvision = "*"
+moviepy = "*"
+cffi = "*"
+opencv-python = "*"
+msgpack = "*"
+easydict = "*"
+Pillow = "*"
+Cython = "*"
+PyYAML = "*"
+tensorboardX = "*"
+
+[requires]
+python_version = "3.6"
