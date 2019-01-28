@@ -6,9 +6,9 @@
 # {
 #     'shelf': {
 #         'calibrated_distance_mm': 3791.9,
-#         'norm_x': 18371.7,
-#         'norm_y': 37819.1,
-#         'norm_z': 29378.4,
+#         'yaw': 18371.7,
+#         'pitch': 37819.1,
+#         'roll': 29378.4,
 #     },
 #     'products': [
 #         {
@@ -26,37 +26,91 @@
 #     ]
 # }
 
+import cv2
+import json
 import numpy as np
+import pandas as pd
 
 from src.face_detect import face_detect
 from src.gazenet import Gazenet
-from src.utils import calculate_poi, euler_angle_to_vector, Ray
-
-GAZENET_PATH = '../models/gazenet/hopenet_robust_alpha1.pkl'
+from src.utils import calculate_poi, euler_angle_to_vector, Ray, logger
 
 
-def get_shelf_plane_norm(gazenet, image):
-    """Pass in the frame at which the person is standing in the middle and looking
-    straight at the camera.
+GAZENET_PATH = '/Users/wonjunetai/src/github.com/vendlytics/models/gazenet/hopenet_robust_alpha1.pkl'
 
+class CalibrationConfig:
+
+    def __init__(self, config_dict=None, yaml_path=None):
+        """
+        Initializes a configuration file read in from a YAML that specifies the 
+        paths of each image file used for calibrating.
+        
+        Arguments:
+            config_dict {dict} -- Configuration dictionary
+            from_yaml   {bool} -- indicate if reading from YAML
+        """
+        if yaml_path:
+            config_dict = CalibrationConfig.parse_yaml(yaml_path)
+
+        if not config_dict:
+            raise ValueError("No yaml_path and config_dict. Need one of two")
+
+        self.shelf_plane = config_dict['shelf']
+        self.products = config_dict['products']
+
+    @staticmethod
+    def parse_yaml(yaml_path):
+        import yaml
+
+        with open(yaml_path, 'r') as stream:
+            try:
+                return yaml.load(stream)
+            except yaml.YAMLError as e:
+                print(e)
+
+
+def angle_and_depth(gazenet, config):
+    """
+        Using frames at which the subject is looking straight at the shelf, get:
+    - shelf norm
+    - distance from shelf
+    
     Arguments:
         gazenet {Gazenet} -- Face angle model
-        image {numpy.array} -- calibration image for shelf plane norm
-
+        config   {dict}  -- dict of paths to color and depth images
+    
     Returns:
-        numpy.array -- vector of shelf plane norm
+        [type] -- [description]
     """
-    # TODO: face_detect() needs to return bbox coordinates of face in image, or
-    # should change gazenet to allow for just accepting an image if image is
-    # cropped
-    bbox = face_detect(image)
-    yaw, pitch, _ = gazenet.image_to_euler_angles(image, bbox)
+    # read image
+    np_img = cv2.imread(config['color_path'])
 
-    return euler_angle_to_vector(yaw, pitch)
+    # find face
+    face_bbox = face_detect(np_img)
+    min_x, min_y, max_x, max_y = face_bbox
+    logger.info("Bounding box: " + str(face_bbox))
+
+    # get angle
+    yaw, pitch, roll = gazenet.image_to_euler_angles(np_img, face_bbox)
+
+    # get average depth
+    depth_df = pd.DataFrame.from_csv(config['depth_path'])
+    avg_depth = np.mean(depth_df.iloc[min_y:max_y, min_x:max_x].values) * 1000 # convert to mm
+    
+    return (yaw, pitch, roll), avg_depth
 
 
-def get_product_poi(gazenet, image, plane_norm):
-    """Pass in image of person looking straight at particular product.
+def calibrate_shelf(gazenet, shelf_config):
+    """
+    Using frames at which the subject is looking straight at the shelf, get:
+    - shelf norm
+    - distance from shelf
+    """
+    return angle_and_depth(gazenet, shelf_config)
+    
+
+def calibrate_product(gazenet, product_config, plane_norm):
+    """Pass in image of person looking straight at a particular product.
 
     Arguments:
         gazenet {Gazenet} -- Face angle model
@@ -65,30 +119,68 @@ def get_product_poi(gazenet, image, plane_norm):
     Returns:
         numpy.array -- coordinates in 3D of POI of shelf plane
     """
-    # TODO: also get location of face x, y, z coords?
-    bbox = face_detect(image)
-    yaw, pitch, _ = gazenet.image_to_euler_angles(image, bbox)
+    (yaw, pitch, _), avg_depth = angle_and_depth(gazenet, product_config)
+    gaze_z = avg_depth
+
+    # read image
+    np_img = cv2.imread(product_config['color_path'])
+
+    # find face
+    face_bbox = face_detect(np_img)
+    min_x, min_y, max_x, max_y = face_bbox 
 
     # gaze_z should come from depth
-    gaze_origin = np.array([gaze_x, gaze_y, gaze_z])
+    gaze_origin = np.array([
+        np.mean([min_x, max_x]), 
+        np.mean([min_y, max_y]), 
+        gaze_z])
     gaze_vec = euler_angle_to_vector(yaw, pitch)
-
-    # TODO: double check this - gaze_z replaces shelf_dist_estimate
+    
+    # TODO: double check this - that gaze_z replaces shelf_dist_estimate?
     return calculate_poi(
         plane_norm, Ray(
             origin=gaze_origin, direction=gaze_vec), gaze_z)
 
 
+def write_results(results, filename, format='json'):
+    with open(filename, 'w') as f:
+        json.dump(results, f)
+
+
 if __name__ == "__main__":
+    # read calibration configuration
+    c = CalibrationConfig(yaml_path='config/test_run.yml')
+    logger.info("Read shelf plane config: %s", c.shelf_plane) 
+    logger.info("Read products config: %s", c.products)
+
     g = Gazenet(GAZENET_PATH)
 
-    shelf_plane_image = None  # TODO: get image
-    product_poi_images = [None, None, None]
+    # calibrate shelf
+    shelf_plane_norm, calibrated_distance_mm = calibrate_shelf(g, c.shelf_plane)
+    logger.info("Calculated shelf norm: %s", str(shelf_plane_norm))
+    logger.info("Distance of subject from shelf: %s", str(calibrated_distance_mm))
 
-    shelf_plane_norm = get_shelf_plane_norm(g, shelf_plane_image)
-
-    results = {'shelf': shelf_plane_norm, 'product_pois': [
-        get_product_poi(g, img, shelf_plane_norm) for img in product_poi_images]}
+    # calibrate products
+    product_pois = []
+    for product in c.products:
+        for name, paths in product.items():
+            poi_x, poi_y, poi_z = calibrate_product(g, paths, shelf_plane_norm)
+            product_pois.append({
+                'name': name,
+                'poi_x': float(poi_x),
+                'poi_y': float(poi_y),
+                'poi_z': float(poi_z)
+            })
 
     # write json
-    # (results, 'somewhere')
+    shelf_yaw, shelf_pitch, shelf_roll = shelf_plane_norm
+    results = {
+        'shelf': {
+            'calibrated_distance_mm': calibrated_distance_mm,
+            'yaw': float(shelf_yaw),
+            'pitch': float(shelf_pitch),
+            'roll': float(shelf_roll)
+        },
+        'products': product_pois
+    }
+    write_results(results, 'config/camera_0_calibration.json')

@@ -1,6 +1,6 @@
 import cv2
 
-CASCADE_FILEPATH = '../models/cascade/haarcascade_frontalface_default.xml'
+CASCADE_FILEPATH = '/Users/wonjunetai/src/github.com/vendlytics/models/cascade/haarcascade_frontalface_default.xml'
 
 
 def face_crop(image):
@@ -54,7 +54,7 @@ def get_largest_face(faces):
 
 
 if __name__ == '__main__':
-    from src.read_bag import read_bag
+    from src.utils import read_bag
     import sys
     import scipy.misc
     import numpy as np

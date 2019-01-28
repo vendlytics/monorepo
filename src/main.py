@@ -1,4 +1,4 @@
-from read_bag import read_bag
+from src.utils import read_bag
 from face_detect import face_detect
 from gazenet import Gazenet
 

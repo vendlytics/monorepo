@@ -1,0 +1,10 @@
+shelf:
+  color_path: notebooks/output/hello_Color_471.png
+  depth_path: notebooks/output/hello_Depth_514.csv
+products:
+  - product_1:
+      color_path: notebooks/output/hello_Color_471.png 
+      depth_path: notebooks/output/hello_Depth_514.csv 
+  # - product_2:
+  #     color_path: hello
+  #     depth_path: hola
