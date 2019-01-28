@@ -144,7 +144,7 @@ def calibrate_product(gazenet, product_config, plane_norm):
 
 def write_results(results, filename, format='json'):
     with open(filename, 'w') as f:
-        json.dump(results, f)
+        json.dump(results, f, indent=4)
 
 
 if __name__ == "__main__":
