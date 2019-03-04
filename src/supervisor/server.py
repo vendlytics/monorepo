@@ -1,0 +1,70 @@
+# TODO: Rather than just printing parsed numpy, need to write stream to a file.
+# TODO: What's the best way to store and organize numpy arrays/videos?
+# TODO: Having logging out to separate file be a coroutine
+
+import asyncio
+from datetime import datetime
+
+from camera_node.client import STREAM_CONFIG
+import numpy as np
+
+
+def parse_to_numpy(data, mode='color'):
+    """Takes bytes from numpy and parses it back to numpy object.
+    
+    Arguments:
+        data {bytes} -- bytes of from a single read
+        mode {str}   -- either color or depth
+    """
+    if mode == 'color':
+        NUMPY_SHAPE = (STREAM_CONFIG['height'], STREAM_CONFIG['width'], 3)
+    elif mode == 'depth':
+        NUMPY_SHAPE = (STREAM_CONFIG['height'], STREAM_CONFIG['width'])
+    else:
+        raise ValueError
+
+    return np.frombuffer(data).reshape(NUMPY_SHAPE)
+
+
+@asyncio.coroutine
+def read_numpy(reader, _):
+    try:
+        data = yield from reader.read()
+    except asyncio.streams.LimitOverrunError as e:
+        print(e.consumed)
+
+    color_numpy_bytes, depth_numpy_bytes = data.split(b'\n')
+
+    parse_to_numpy(color_numpy_bytes.strip(), mode='color')
+    parse_to_numpy(depth_numpy_bytes.strip(), mode='depth')
+
+
+def write_numpy(array, file_path):
+    # TODO: In stream fashion, should write data to filesystem
+    # TODO: Streams from the same camera should go to same directory
+    pass
+
+
+@asyncio.coroutine
+def flow():
+    # chaining coroutines to have reading and writing to file be decoupled
+    loop.stop()
+
+
+if __name__ == "__main__":
+    IP, PORT = 'localhost', 9999
+
+    loop = asyncio.get_event_loop()
+    coro = asyncio.start_server(read_numpy, IP, PORT, loop=loop)
+    server = loop.run_until_complete(coro)
+
+    print("Serving on:", server.sockets[0].getsockname())
+    try:
+        loop.run_forever()
+    except KeyboardInterrupt:
+        pass
+
+    server.close()
+    loop.run_until_complete(server.wait_closed())
+    loop.close()
+
