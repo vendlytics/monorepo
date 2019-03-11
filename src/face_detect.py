@@ -1,6 +1,6 @@
 import cv2
 
-CASCADE_FILEPATH = '/Users/wonjunetai/src/github.com/vendlytics/models/cascade/haarcascade_frontalface_default.xml'
+CASCADE_FILEPATH = '../models/cascade/haarcascade_frontalface_default.xml'
 
 
 def face_crop(image):
