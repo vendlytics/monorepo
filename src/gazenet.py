@@ -6,7 +6,7 @@ from torchvision import transforms
 from PIL import Image
 import numpy as np
 
-from . import vendgaze
+import vendgaze
 
 
 class Gazenet:
