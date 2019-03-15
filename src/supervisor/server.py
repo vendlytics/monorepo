@@ -5,7 +5,8 @@
 import asyncio
 from datetime import datetime
 
-from camera_node.client import STREAM_CONFIG
+from src.config import COLOR_ARRAY_DTYPE, DEPTH_ARRAY_DTYPE, MAGIC, STREAM_CONFIG, IP, PORT
+from src.utils import logger
 import numpy as np
 
 
@@ -17,13 +18,15 @@ def parse_to_numpy(data, mode='color'):
         mode {str}   -- either color or depth
     """
     if mode == 'color':
-        NUMPY_SHAPE = (STREAM_CONFIG['height'], STREAM_CONFIG['width'], 3)
+        return np.frombuffer(data, dtype=COLOR_ARRAY_DTYPE).reshape(
+            (STREAM_CONFIG['height'], STREAM_CONFIG['width'], 3)
+        )
     elif mode == 'depth':
-        NUMPY_SHAPE = (STREAM_CONFIG['height'], STREAM_CONFIG['width'])
+        return np.frombuffer(data, dtype=DEPTH_ARRAY_DTYPE).reshape(
+            (STREAM_CONFIG['height'], STREAM_CONFIG['width'])
+        )
     else:
         raise ValueError
-
-    return np.frombuffer(data).reshape(NUMPY_SHAPE)
 
 
 @asyncio.coroutine
@@ -33,10 +36,13 @@ def read_numpy(reader, _):
     except asyncio.streams.LimitOverrunError as e:
         print(e.consumed)
 
-    color_numpy_bytes, depth_numpy_bytes = data.split(b'\n')
+    color_numpy_bytes, depth_numpy_bytes = data.split(MAGIC)
+    
+    logger.info('Received {} bytes for color'.format(len(color_numpy_bytes)))
+    logger.info('Received {} bytes for depth'.format(len(depth_numpy_bytes)))
 
-    parse_to_numpy(color_numpy_bytes.strip(), mode='color')
-    parse_to_numpy(depth_numpy_bytes.strip(), mode='depth')
+    parse_to_numpy(color_numpy_bytes, mode='color')
+    parse_to_numpy(depth_numpy_bytes, mode='depth')
 
 
 def write_numpy(array, file_path):
@@ -52,8 +58,6 @@ def flow():
 
 
 if __name__ == "__main__":
-    IP, PORT = 'localhost', 9999
-
     loop = asyncio.get_event_loop()
     coro = asyncio.start_server(read_numpy, IP, PORT, loop=loop)
     server = loop.run_until_complete(coro)
