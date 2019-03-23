@@ -1,7 +1,8 @@
-from collections import namedtuple
 import logging
 import numpy as np
 import pyrealsense2 as rs
+import json
+from typing import NamedTuple
 
 # Logger
 logger = logging.getLogger()
@@ -12,8 +13,14 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
-# Ray
-Ray = namedtuple('Ray', ['origin', 'direction'])
+class Ray(NamedTuple):
+    origin: np.array # Shape: (3,)
+    direction: np.array # Shape: (3,)
+
+# Representation of the calibration script's output
+class Calibration(NamedTuple):
+    shelf_plane_normal: np.array # Shape: (3,)
+    products: np.array # Shape: (num_products, 3)
 
 # yields (color np.array, depth np.array)
 def read_bag(filepath):
@@ -71,6 +78,18 @@ def calculate_poi(n_vector, ray, dist_estimate):
         float(np.dot(n_vector, ray.direction))
     return ray.origin + ray.direction * t
 
+def read_calibration(calibration_filepath):
+    with open(calibration_filepath) as f:
+        calibration = json.load(f)
+    shelf_plane_normal = euler_angle_to_vector(
+            yaw_angle=calibration['shelf']['yaw'],
+            pitch_angle=calibration['shelf']['pitch'])
+    products = []
+    for product in calibration['products']:
+        products.append([product['poi_x'], product['poi_y'], product['poi_z']])
+    products = np.array(products)
+    return Calibration(shelf_plane_normal=shelf_plane_normal, products=products)
 
-def abs_euclidean_distance(vec_1, vec_2):
-    return np.absolute(euclidean(vec_1, vec_2))
+def index_nearest(vector, matrix):
+    return np.linalg.norm(matrix - vector, axis=1).argmin()
+

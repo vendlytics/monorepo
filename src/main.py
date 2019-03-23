@@ -1,9 +1,9 @@
-from utils import read_bag, euler_angle_to_vector, Ray, calculate_poi
+from utils import read_bag, euler_angle_to_vector, Ray, \
+    calculate_poi, read_calibration, index_nearest
 from face_detect import face_detect
 from gazenet import Gazenet
 
 import argparse
-import scipy.misc
 import matplotlib
 try:
     import tkinter
@@ -16,11 +16,17 @@ import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    "-f",
-    "--filepath",
+    "-bf",
+    "--bag_filepath",
     type=str,
     required=True,
-    help="Path to the bag file")
+    help="Path to a bag file to run inferences on")
+parser.add_argument(
+    "-cf",
+    "--calibration_filepath",
+    type=str,
+    required=True,
+    help="Path to a calibration json output")
 parser.add_argument(
     "-d",
     "--debug",
@@ -57,13 +63,12 @@ def show_images(images):
         plt.imshow(image)
     plt.show()
 
-# TODO
-shelf_plane_normal = np.array([1000, 1000, 1000])
+shelf_plane_normal, products = read_calibration(args.calibration_filepath)
 
 gazenet = Gazenet(GAZENET_PATH)
 
 num_face_not_detected = 0
-for i, (color, depth) in enumerate(read_bag(args.filepath)):
+for i, (color, depth) in enumerate(read_bag(args.bag_filepath)):
     face = face_detect(color)
     if face is None:
         num_face_not_detected += 1
@@ -88,6 +93,8 @@ for i, (color, depth) in enumerate(read_bag(args.filepath)):
             n_vector=shelf_plane_normal,
             ray=gaze_ray,
             dist_estimate=depth)
+    most_likely_product = index_nearest(vector=poi, matrix=products)
+    print('product prediction idx:', most_likely_product)
 
 print('Total frames:', i + 1)
 print('Frames without face detection:', num_face_not_detected)
