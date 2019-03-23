@@ -8,7 +8,7 @@ STREAM_CONFIG = {
     'depth_format': rs.format.z16
 }
 
-IP, PORT = "localhost", 9999
+IP, PORT = "localhost", 1234
 
 COLOR_ARRAY_DTYPE = 'uint8'
 DEPTH_ARRAY_DTYPE = 'uint16'

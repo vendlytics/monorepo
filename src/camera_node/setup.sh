@@ -56,3 +56,9 @@ sudo apt-get -y install git
 
 # Get librealsense and build for Linux
 git clone git@github.com:IntelRealSense/librealsense.git && cd librealsense
+sudo apt-get install -y libssl-dev libusb-1.0-0-dev pkg-config libgtk-3-dev 
+sudo apt-get install -y libglfw3-dev libgl1-mesa-dev libglu1-mesa-dev 
+
+# building
+
+# cmake ../ -DBUILD_EXAMPLES=true -DBUILD_GRAPHICAL_EXAMPLES=false
