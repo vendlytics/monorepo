@@ -2,7 +2,7 @@
 pipenv
 
 matplotlib
-tensorflow
+# tensorflow
 numpy
 pandas
 scipy
@@ -15,8 +15,8 @@ tornado
 kafka-python==1.4.3
 
 # for gaze
-https://download.pytorch.org/whl/cu100/torch-1.0.0-cp36-cp36m-linux_x86_64.whl
-torchvision
+# https://download.pytorch.org/whl/cu100/torch-1.0.0-cp36-cp36m-linux_x86_64.whl
+# torchvision
 
 # for notebooks
 moviepy
