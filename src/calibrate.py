@@ -29,20 +29,25 @@
 import cv2
 import json
 import numpy as np
+import os
 import pandas as pd
 
 from src.face_detect import face_detect
 from src.gazenet import Gazenet
 from src.utils import calculate_poi, euler_angle_to_vector, Ray, logger
 
+CONFIG_DIR = 'config'
+CONFIG_FILE_DIR = os.path.join(CONFIG_DIR, 'files')
 
-GAZENET_PATH = '/Users/wonjunetai/src/github.com/vendlytics/models/gazenet/hopenet_robust_alpha1.pkl'
+CONFIG_PATH = 'baseline_calibration.yml'
+JSON_OUTPUT_PATH = 'baseline_calibration.json'
+GAZENET_PATH = 'models/gazenet/hopenet_robust_alpha1.pkl'
 
 class CalibrationConfig:
 
     def __init__(self, config_dict=None, yaml_path=None):
         """
-        Initializes a configuration file read in from a YAML that specifies the 
+        Initializes a configuration file jead in from a YAML that specifies the 
         paths of each image file used for calibrating.
         
         Arguments:
@@ -83,7 +88,7 @@ def angle_and_depth(gazenet, config):
         [type] -- [description]
     """
     # read image
-    np_img = cv2.imread(config['color_path'])
+    np_img = cv2.imread(os.path.join(CONFIG_FILE_DIR, config['color_path']))
 
     # find face
     face_bbox = face_detect(np_img)
@@ -94,7 +99,7 @@ def angle_and_depth(gazenet, config):
     yaw, pitch, roll = gazenet.image_to_euler_angles(np_img, face_bbox)
 
     # get average depth
-    depth_df = pd.DataFrame.from_csv(config['depth_path'])
+    depth_df = pd.DataFrame.from_csv(os.path.join(CONFIG_FILE_DIR, config['depth_path']))
     avg_depth = np.mean(depth_df.iloc[min_y:max_y, min_x:max_x].values) * 1000 # convert to mm
     
     return (yaw, pitch, roll), avg_depth
@@ -123,7 +128,7 @@ def calibrate_product(gazenet, product_config, plane_norm):
     gaze_z = avg_depth
 
     # read image
-    np_img = cv2.imread(product_config['color_path'])
+    np_img = cv2.imread(os.path.join(CONFIG_FILE_DIR, product_config['color_path']))
 
     # find face
     face_bbox = face_detect(np_img)
@@ -149,9 +154,9 @@ def write_results(results, filename, format='json'):
 
 if __name__ == "__main__":
     # read calibration configuration
-    c = CalibrationConfig(yaml_path='config/test_run.yml')
-    logger.info("Read shelf plane config: %s", c.shelf_plane) 
-    logger.info("Read products config: %s", c.products)
+    c = CalibrationConfig(yaml_path='config/{}'.format(CONFIG_PATH) )
+    logger.info("Read shelf plane config: \n%s", json.dumps(c.shelf_plane, indent=2)) 
+    logger.info("Read products config: \n%s", json.dumps(c.products, indent=2))
 
     g = Gazenet(GAZENET_PATH)
 
@@ -183,4 +188,4 @@ if __name__ == "__main__":
         },
         'products': product_pois
     }
-    write_results(results, 'config/camera_0_calibration.json')
+    write_results(results, 'config/' + JSON_OUTPUT_PATH)

@@ -1,0 +1,28 @@
+shelf:
+  color_path: hello_Color_1250.png
+  depth_path: hello_Depth_2500.csv
+products:
+  - product_1:
+      color_path: hello_Color_490.png 
+      depth_path: hello_Depth_1140.csv 
+  - product_2:
+      color_path: hello_Color_620.png 
+      depth_path: hello_Depth_1350.csv 
+  - product_3:
+      color_path: hello_Color_750.png 
+      depth_path: hello_Depth_1600.csv 
+  - product_4:
+      color_path: hello_Color_920.png 
+      depth_path: hello_Depth_1930.csv 
+  - product_5:
+      color_path: hello_Color_1100.png 
+      depth_path: hello_Depth_2290.csv 
+  - product_6:
+      color_path: hello_Color_1250.png 
+      depth_path: hello_Depth_2500.csv 
+  - product_7:
+      color_path: hello_Color_1400.png 
+      depth_path: hello_Depth_2900.csv 
+  - product_8:
+      color_path: hello_Color_1600.png 
+      depth_path: hello_Depth_3250.csv 

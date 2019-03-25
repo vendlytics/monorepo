@@ -35,8 +35,9 @@ parser.add_argument(
     help="Enable debug mode")
 args = parser.parse_args()
 
-GAZENET_PATH = '../models/gazenet/hopenet_robust_alpha1.pkl'
-
+GAZENET_PATH = 'models/gazenet/hopenet_robust_alpha1.pkl'
+COLOR_CONFIG = {'width': 640, 'height': 360, 'fps': 30}
+DEPTH_CONFIG = {'width': 640, 'height': 480, 'fps': 30}
 
 # returns color_crop, depth_crop
 def crop(face, color, depth):
@@ -68,14 +69,19 @@ shelf_plane_normal, products = read_calibration(args.calibration_filepath)
 gazenet = Gazenet(GAZENET_PATH)
 
 num_face_not_detected = 0
-for i, (color, depth) in enumerate(read_bag(args.bag_filepath)):
+
+for i, (color, depth) in enumerate(
+        read_bag(args.filepath, color_config=COLOR_CONFIG, depth_config=DEPTH_CONFIG)
+    ):
     face = face_detect(color)
     if face is None:
         num_face_not_detected += 1
         continue
+
     color_crop, depth_crop = crop(face, color, depth)
     if args.debug:
         show_images([color, color_crop, depth, depth_crop])
+
     angles = gazenet.image_to_euler_angles(
         color, (face[0], face[1], face[0] + face[2], face[1] + face[3]))
 

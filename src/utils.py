@@ -4,6 +4,8 @@ import pyrealsense2 as rs
 import json
 from typing import NamedTuple
 
+from scipy.spatial.distance import euclidean
+
 # Logger
 logger = logging.getLogger()
 handler = logging.StreamHandler()
@@ -23,14 +25,13 @@ class Calibration(NamedTuple):
     products: np.array # Shape: (num_products, 3)
 
 # yields (color np.array, depth np.array)
-def read_bag(filepath):
+def read_bag(filepath, color_config, depth_config):
     # create context
     pipeline = rs.pipeline()
     config = rs.config()
-
     rs.config.enable_device_from_file(config, filepath, repeat_playback=False)
-    config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 0)
-    config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 0)
+    config.enable_stream(rs.stream.color, color_config['width'], color_config['height'], rs.format.rgb8, color_config['fps'])
+    config.enable_stream(rs.stream.depth, depth_config['width'], depth_config['height'], rs.format.z16, depth_config['fps'])
 
     align = rs.align(rs.stream.color)
     pipeline_profile = pipeline.start(config)

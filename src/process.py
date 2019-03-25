@@ -17,7 +17,6 @@ import numpy as np
 import os
 import pandas as pd
 from scipy.signal import medfilt
-from scipy.spatial.distance import euclidean
 
 import src.utils as utils
 
