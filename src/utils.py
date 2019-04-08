@@ -79,18 +79,71 @@ def calculate_poi(n_vector, ray, dist_estimate):
         float(np.dot(n_vector, ray.direction))
     return ray.origin + ray.direction * t
 
+
 def read_calibration(calibration_filepath):
     with open(calibration_filepath) as f:
         calibration = json.load(f)
-    shelf_plane_normal = euler_angle_to_vector(
-            yaw_angle=calibration['shelf']['yaw'],
-            pitch_angle=calibration['shelf']['pitch'])
+    shelf_plane_normal = (
+        calibration['shelf']['x_vec'], 
+        calibration['shelf']['y_vec'],
+        calibration['shelf']['z_vec']
+    )
     products = []
     for product in calibration['products']:
         products.append([product['poi_x'], product['poi_y'], product['poi_z']])
     products = np.array(products)
     return Calibration(shelf_plane_normal=shelf_plane_normal, products=products)
 
+
 def index_nearest(vector, matrix):
     return np.linalg.norm(matrix - vector, axis=1).argmin()
 
+
+def parse_output_path(path: str):
+    """Assume that last number before period is frame number.
+
+    Arguments:
+        path {str} -- Path of file
+
+    Returns:
+        [tuple(str)] -- 
+    """
+    path_split = path.split('_')
+    prefix = '_'.join(path_split[:-2])
+    depth_or_color = path_split[-2]
+    frame_num, file_format = path_split[-1].split('.')
+    return prefix, depth_or_color, frame_num, file_format
+
+
+def get_next_frame(path):
+    """Increment the frame.
+
+    Arguments:
+        path {str} -- The path of the file
+
+    Returns:
+        [type] -- [description]
+    """
+
+    prefix, depth_or_color, frame_num, file_format = parse_output_path(path)
+    new_frame_num = int(frame_num) + 1
+    result = '.'.join(['_'.join([prefix, depth_or_color, str(new_frame_num)]), file_format])
+    return result
+
+
+def take_average(func, n):
+    """Returns the average of `n` results of a function.
+    
+    Arguments:
+        func {func} -- Function to wrap
+        n {int} -- Number of samples of function
+    
+    Returns:
+        [func] -- Wrapper for taking the average n
+    """
+    def wrapper(*args, **kwargs):
+        d = np.asarray([])
+        for i in range(n):
+            d = d.append(func(*args, **kwargs))
+        np.average(d, axis=1)
+    return wrapper
