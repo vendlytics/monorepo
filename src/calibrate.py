@@ -1,43 +1,55 @@
-# goal of this is to generate a JSON calibration file for each camera at
-# each shelf that looks like:
 
-# `camera_0_calibration.json`
-#
-# {
-#     'shelf': {
-#         'calibrated_distance_mm': 3791.9,
-#         'yaw': 18371.7,
-#         'pitch': 37819.1,
-#         'roll': 29378.4,
-#     },
-#     'products': [
-#         {
-#             'name': 'Product 0',
-#             'poi_x': 332.0,
-#             'poi_y': 398.3,
-#             'poi_z': 298.1
-#         },
-#         {
-#             'name': 'Product 1',
-#             'poi_x': 938.1,
-#             'poi_y': 198.1,
-#             'poi_z': 380.2
-#         }
-#     ]
-# }
+"""
+Generate a JSON calibration file for each camera at
+each shelf that looks like:
 
-import cv2
+
+`camera_0_calibration.json`
+
+{
+    'shelf': {
+        'calibrated_distance_m': 3791.9,
+        'yaw': 18371.7,
+        'pitch': 37819.1,
+        'roll': 29378.4,
+    },
+    'products': [
+        {
+            'name': 'Product 0',
+            'poi_x': 332.0,
+            'poi_y': 398.3,
+            'poi_z': 298.1
+        },
+        {
+            'name': 'Product 1',
+            'poi_x': 938.1,
+            'poi_y': 198.1,
+            'poi_z': 380.2
+        }
+    ]
+}
+
+Usage: 
+
+python3.6 -m src.calibrate
+"""
+
 import json
-import numpy as np
 import os
+from typing import List, Dict
+import numpy as np
 import pandas as pd
+import cv2
 
 from src.face_detect import face_detect
 from src.gazenet import Gazenet
-from src.utils import calculate_poi, euler_angle_to_vector, Ray, logger
+from src.utils import calculate_poi, euler_angle_to_vector, Ray, \
+                      logger, get_next_frame
 
 CONFIG_DIR = 'config'
 CONFIG_FILE_DIR = os.path.join(CONFIG_DIR, 'files')
+
+VIDEO_OUTPUT_PATH = os.path.join('output')
 
 CONFIG_PATH = 'baseline_calibration.yml'
 JSON_OUTPUT_PATH = 'baseline_calibration.json'
@@ -74,47 +86,94 @@ class CalibrationConfig:
                 print(e)
 
 
-def angle_and_depth(gazenet, config):
+def generate_next_n_paths(start_path: str, n: int) -> List[str]:
     """
-        Using frames at which the subject is looking straight at the shelf, get:
-    - shelf norm
-    - distance from shelf
+    Generate a list of paths that are up to alphanumerically n after the 
+    start_path.
     
     Arguments:
-        gazenet {Gazenet} -- Face angle model
-        config   {dict}  -- dict of paths to color and depth images
+        start_path {str} -- [description]
+        n {int} -- [description]
     
     Returns:
-        [type] -- [description]
+        List[str] -- [description]
     """
-    # read image
-    np_img = cv2.imread(os.path.join(CONFIG_FILE_DIR, config['color_path']))
+    d = []
+    successes, attempts = 0, 0
+    cur_path = start_path
+    while successes <= n:
+        path_to_check = os.path.join(VIDEO_OUTPUT_PATH, cur_path)
+        if os.path.exists(path_to_check):
+            d.append(path_to_check)
+            successes += 1
+        cur_path = get_next_frame(cur_path)
+        attempts += 1
+        if attempts > (2 * n):
+            raise Exception('too many attempts')
+    return d
 
-    # find face
+
+def angle_and_depth(gazenet, color_image_path: str, depth_image_path: str, 
+                is_product: bool = False):
+    """
+    Using frames at which the subject is looking straight at the shelf, get:
+    - gaze vector
+    - distance from shelf
+
+    Arguments:
+        gazenet {Gazenet} -- Face angle model
+        config    {dict}  -- dict of paths to color and depth images
+
+    Returns:
+        [tuple[float], float] -- Tuple of yaw, pitch and roll and float of median depth
+    """
+    np_img = cv2.imread(color_image_path)
     face_bbox = face_detect(np_img)
     min_x, min_y, max_x, max_y = face_bbox
-    logger.info("Bounding box: " + str(face_bbox))
 
-    # get angle
+    if is_product: logger.info("Product bounding box: " + str(face_bbox))
+    else: logger.info("Shelf bounding box: " + str(face_bbox))
+
     yaw, pitch, roll = gazenet.image_to_euler_angles(np_img, face_bbox)
 
-    # get average depth
-    depth_df = pd.DataFrame.from_csv(os.path.join(CONFIG_FILE_DIR, config['depth_path']))
-    avg_depth = np.mean(depth_df.iloc[min_y:max_y, min_x:max_x].values) * 1000 # convert to mm
-    
-    return (yaw, pitch, roll), avg_depth
+    # get median depth
+    depth_df = pd.DataFrame.from_csv(depth_image_path)
+    median_depth = np.median(depth_df.iloc[min_y:max_y, min_x:max_x].values)
+
+    return (yaw, pitch, roll), median_depth, (min_x, min_y, max_x, max_y)
 
 
-def calibrate_shelf(gazenet, shelf_config):
+def calibrate_shelf(gazenet, shelf_config: Dict):
     """
     Using frames at which the subject is looking straight at the shelf, get:
     - shelf norm
     - distance from shelf
-    """
-    return angle_and_depth(gazenet, shelf_config)
     
+    Arguments:
+        gazenet {[type]} -- [description]
+        shelf_config {[type]} -- [description]
+    
+    Returns:
+        [type] -- [description]
+    """
+    color_paths = generate_next_n_paths(shelf_config['color_path'], 10)
+    depth_paths = generate_next_n_paths(shelf_config['depth_path'], 10)
+    
+    results = []
+    for cp, dp in zip(color_paths, depth_paths):
+        (yaw, pitch, _), gaze_z, (min_x, min_y, max_x, max_y) = angle_and_depth(gazenet, cp, dp)
+        gaze_x = np.mean([min_x, max_x])
+        gaze_y = np.mean([min_y, max_y])
+        results.append(np.asarray((yaw, pitch, _, gaze_x, gaze_y, gaze_z)))
+    avg_results = np.average(np.asarray(results), axis=0)
+    avg_yaw, avg_pitch, avg_gaze_x, avg_gaze_y, avg_gaze_z = \
+        avg_results[0], avg_results[1], avg_results[3], avg_results[4], avg_results[5]
+    avg_shelf_norm = euler_angle_to_vector(avg_yaw, avg_pitch)
+    avg_origin = (avg_gaze_x, avg_gaze_y, avg_gaze_z)
+    return avg_shelf_norm, avg_origin
 
-def calibrate_product(gazenet, product_config, plane_norm):
+
+def calibrate_product(gazenet, product_config: Dict, plane_norm, shelf_gaze_origin: List[float]):
     """Pass in image of person looking straight at a particular product.
 
     Arguments:
@@ -124,30 +183,26 @@ def calibrate_product(gazenet, product_config, plane_norm):
     Returns:
         numpy.array -- coordinates in 3D of POI of shelf plane
     """
-    (yaw, pitch, _), avg_depth = angle_and_depth(gazenet, product_config)
-    gaze_z = avg_depth
-
-    # read image
-    np_img = cv2.imread(os.path.join(CONFIG_FILE_DIR, product_config['color_path']))
-
-    # find face
-    face_bbox = face_detect(np_img)
-    min_x, min_y, max_x, max_y = face_bbox 
-
-    # gaze_z should come from depth
-    gaze_origin = np.array([
-        np.mean([min_x, max_x]), 
-        np.mean([min_y, max_y]), 
-        gaze_z])
-    gaze_vec = euler_angle_to_vector(yaw, pitch)
+    color_paths = generate_next_n_paths(product_config['color_path'], 10)
+    depth_paths = generate_next_n_paths(product_config['depth_path'], 10)
     
+    results = []
+    for cp, dp in zip(color_paths, depth_paths):
+        (yaw, pitch, _), gaze_z, (min_x, min_y, max_x, max_y) = angle_and_depth(gazenet, cp, dp, is_product=True)
+        gaze_vec = euler_angle_to_vector(yaw, pitch)
+        gaze_origin = np.array([np.mean([min_x, max_x]), np.mean([min_y, max_y]), gaze_z])
+        results.append(np.asarray([gaze_vec, gaze_origin]))
+    avg_results = np.average(np.asarray(results), axis=0)
+    avg_gaze_vec, avg_gaze_origin = avg_results[0], avg_results[1]
+    avg_gaze_depth = avg_gaze_origin[2]
+    print(avg_gaze_origin)
+    print(shelf_gaze_origin)
+
     # TODO: double check this - that gaze_z replaces shelf_dist_estimate?
-    return calculate_poi(
-        plane_norm, Ray(
-            origin=gaze_origin, direction=gaze_vec), gaze_z)
+    return calculate_poi(plane_norm, Ray(origin=avg_gaze_origin - shelf_gaze_origin, direction=avg_gaze_vec), avg_gaze_depth)
 
 
-def write_results(results, filename, format='json'):
+def write_results(results, filename):
     with open(filename, 'w') as f:
         json.dump(results, f, indent=4)
 
@@ -161,15 +216,16 @@ if __name__ == "__main__":
     g = Gazenet(GAZENET_PATH)
 
     # calibrate shelf
-    shelf_plane_norm, calibrated_distance_mm = calibrate_shelf(g, c.shelf_plane)
+    shelf_plane_norm, shelf_gaze_origin = calibrate_shelf(g, c.shelf_plane)
     logger.info("Calculated shelf norm: %s", str(shelf_plane_norm))
-    logger.info("Distance of subject from shelf: %s", str(calibrated_distance_mm))
+    logger.info("Shelf origin: %s", str(shelf_gaze_origin))
 
     # calibrate products
     product_pois = []
     for product in c.products:
         for name, paths in product.items():
-            poi_x, poi_y, poi_z = calibrate_product(g, paths, shelf_plane_norm)
+            logger.info('Calibrating: ' + name)
+            poi_x, poi_y, poi_z = calibrate_product(g, paths, shelf_plane_norm, shelf_gaze_origin)
             product_pois.append({
                 'name': name,
                 'poi_x': float(poi_x),
@@ -178,14 +234,15 @@ if __name__ == "__main__":
             })
 
     # write json
-    shelf_yaw, shelf_pitch, shelf_roll = shelf_plane_norm
-    results = {
+    json_results = {
         'shelf': {
-            'calibrated_distance_mm': calibrated_distance_mm,
-            'yaw': float(shelf_yaw),
-            'pitch': float(shelf_pitch),
-            'roll': float(shelf_roll)
+            'origin_x': float(shelf_gaze_origin[0]),
+            'origin_y': float(shelf_gaze_origin[1]),
+            'origin_z': float(shelf_gaze_origin[2]),
+            'x_vec': float(shelf_plane_norm[0]),
+            'y_vec': float(shelf_plane_norm[1]),
+            'z_vec': float(shelf_plane_norm[2])
         },
         'products': product_pois
     }
-    write_results(results, 'config/' + JSON_OUTPUT_PATH)
+    write_results(json_results, 'config/' + JSON_OUTPUT_PATH)
