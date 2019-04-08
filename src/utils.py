@@ -64,19 +64,20 @@ def euler_angle_to_vector(yaw_angle, pitch_angle):
     ])
 
 
-def calculate_poi(n_vector, ray, dist_estimate):
+def calculate_poi(n_vector, ray, gaze_depth):
     """
     Finds the point of intersection of a vector on the shelf plane.
 
     n_vector is shelf plane vector i.e. normal to the shelf plane
     ray is the combination of origin and direction to intersect with the plane
-    dist_estimate is estimate of shelf distance from person
 
     Notation from http://www.ambrsoft.com/TrigoCalc/Plan3D/PlaneLineIntersection_.htm
     """
-    p_vector = n_vector + dist_estimate
-    t = -(np.dot(n_vector, p_vector) + dist_estimate) / \
-        float(np.dot(n_vector, ray.direction))
+    p_vector = n_vector + np.array([0, 0, gaze_depth])
+    numerator = float(np.dot(n_vector, p_vector - ray.origin))
+    denominator = float(np.dot(n_vector, ray.direction - ray.origin))
+    print(numerator, denominator)
+    t = -(numerator) / denominator
     return ray.origin + ray.direction * t
 
 

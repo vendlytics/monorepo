@@ -31,7 +31,7 @@ def surface_points(normal, point):
     # surface is normal[0]*x + normal[1]*y + normal[2]*z + d = 0
     d = -np.dot(point, normal)
     # make sure that x and y values cover each product with extra offset
-    offset = 50
+    offset = 1
     xs, ys = np.meshgrid(
         range(int(products[:, 0].min()) - offset, int(products[:, 0].max()) + offset),
         range(int(products[:, 1].min()) - offset, int(products[:, 1].max()) + offset))

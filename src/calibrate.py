@@ -46,6 +46,7 @@ from src.gazenet import Gazenet
 from src.utils import calculate_poi, euler_angle_to_vector, Ray, \
                       logger, get_next_frame
 
+NEXT_N = 5
 CONFIG_DIR = 'config'
 CONFIG_FILE_DIR = os.path.join(CONFIG_DIR, 'files')
 
@@ -156,8 +157,8 @@ def calibrate_shelf(gazenet, shelf_config: Dict):
     Returns:
         [type] -- [description]
     """
-    color_paths = generate_next_n_paths(shelf_config['color_path'], 10)
-    depth_paths = generate_next_n_paths(shelf_config['depth_path'], 10)
+    color_paths = generate_next_n_paths(shelf_config['color_path'], NEXT_N)
+    depth_paths = generate_next_n_paths(shelf_config['depth_path'], NEXT_N)
     
     results = []
     for cp, dp in zip(color_paths, depth_paths):
@@ -170,6 +171,7 @@ def calibrate_shelf(gazenet, shelf_config: Dict):
         avg_results[0], avg_results[1], avg_results[3], avg_results[4], avg_results[5]
     avg_shelf_norm = euler_angle_to_vector(avg_yaw, avg_pitch)
     avg_origin = (avg_gaze_x, avg_gaze_y, avg_gaze_z)
+    
     return avg_shelf_norm, avg_origin
 
 
@@ -183,8 +185,8 @@ def calibrate_product(gazenet, product_config: Dict, plane_norm, shelf_gaze_orig
     Returns:
         numpy.array -- coordinates in 3D of POI of shelf plane
     """
-    color_paths = generate_next_n_paths(product_config['color_path'], 10)
-    depth_paths = generate_next_n_paths(product_config['depth_path'], 10)
+    color_paths = generate_next_n_paths(product_config['color_path'], NEXT_N)
+    depth_paths = generate_next_n_paths(product_config['depth_path'], NEXT_N)
     
     results = []
     for cp, dp in zip(color_paths, depth_paths):
@@ -195,8 +197,6 @@ def calibrate_product(gazenet, product_config: Dict, plane_norm, shelf_gaze_orig
     avg_results = np.average(np.asarray(results), axis=0)
     avg_gaze_vec, avg_gaze_origin = avg_results[0], avg_results[1]
     avg_gaze_depth = avg_gaze_origin[2]
-    print(avg_gaze_origin)
-    print(shelf_gaze_origin)
 
     # TODO: double check this - that gaze_z replaces shelf_dist_estimate?
     return calculate_poi(plane_norm, Ray(origin=avg_gaze_origin - shelf_gaze_origin, direction=avg_gaze_vec), avg_gaze_depth)
